@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Influencer;
-use Illuminate\Http\Request;
+use App\Http\Controllers\CartController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('influencers')->group(function () {
@@ -10,3 +10,5 @@ Route::prefix('influencers')->group(function () {
     Route::put('/{id}', [Influencer::class, 'update']);
     Route::delete('/{id}', [Influencer::class, 'destroy']);
 });
+
+Route::get('/cart-details', [CartController::class, 'index']);
