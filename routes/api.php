@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Influencer;
 use App\Http\Controllers\CartController;
 use Illuminate\Support\Facades\Route;
@@ -13,3 +14,4 @@ Route::prefix('influencers')->group(function () {
 
 Route::get('/cart-details', [CartController::class, 'index']);
 Route::get('/cart-details/chart', [CartController::class, 'chartData']);
+Route::post('/auth/firebase-login', [AuthController::class, 'firebaseLogin']);

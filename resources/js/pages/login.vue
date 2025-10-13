@@ -1,10 +1,12 @@
 <script setup>
 import { useGenerateImageVariant } from "@/@core/composable/useGenerateImageVariant";
-import AuthProvider from "@/views/pages/authentication/AuthProvider.vue";
 import authV1LoginMaskDark from "@images/pages/auth-v1-login-mask-dark.png";
 import authV1LoginMaskLight from "@images/pages/auth-v1-login-mask-light.png";
 import { VNodeRenderer } from "@layouts/components/VNodeRenderer";
 import { themeConfig } from "@themeConfig";
+
+import { setupRecaptcha } from "@/firebase/auth";
+import { auth } from "@/firebase/index";
 
 definePage({
   meta: {
@@ -13,16 +15,18 @@ definePage({
   },
 });
 
-const form = ref({
-  email: "",
-  password: "",
-  remember: false,
-});
-
 const authV1ThemeLoginMask = useGenerateImageVariant(
   authV1LoginMaskLight,
   authV1LoginMaskDark
 );
+
+const form = ref({ phone_number: "" });
+const loading = ref(false);
+const errorMessage = ref("");
+
+onMounted(() => {
+  setupRecaptcha(); // Inicializa reCAPTCHA al montar el componente
+});
 </script>
 
 <template>
@@ -53,7 +57,7 @@ const authV1ThemeLoginMask = useGenerateImageVariant(
       </VCardText>
 
       <VCardText>
-        <VForm @submit.prevent="() => {}">
+        <VForm @submit.prevent="">
           <VRow>
             <!-- Phone -->
             <VCol cols="12">
@@ -62,6 +66,8 @@ const authV1ThemeLoginMask = useGenerateImageVariant(
                 label="Número de celular"
                 type="tel"
                 placeholder="+51 999 999 999"
+                :error="!!errorMessage"
+                :error-messages="errorMessage"
                 required
               />
             </VCol>
