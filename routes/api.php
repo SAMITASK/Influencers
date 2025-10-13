@@ -9,8 +9,4 @@ Route::prefix('influencers')->group(function () {
     Route::post('/', [Influencer::class, 'store']);
     Route::put('/{id}', [Influencer::class, 'update']);
     Route::delete('/{id}', [Influencer::class, 'destroy']);
-
-    // Códigos del influencer
-    Route::post('/{id}/codes', [Influencer::class, 'addCode']);
-    Route::delete('/{id}/codes/{codeId}', [Influencer::class, 'deleteCode']);
 });

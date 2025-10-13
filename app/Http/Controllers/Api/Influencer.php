@@ -117,37 +117,5 @@ class Influencer extends Controller
             ], 500);
         }
     }
-
-    // ❌ Eliminar influencer
-    public function destroy($id)
-    {
-        $influencer = UserInfluencer::findOrFail($id);
-        $influencer->delete();
-
-        return response()->json(['message' => 'Influencer eliminado correctamente']);
-    }
-
-    // 🔢 Agregar códigos a un influencer
-    public function addCode(Request $request, $id)
-    {
-        $influencer = UserInfluencer::findOrFail($id);
-
-        $validated = $request->validate([
-            'code' => 'required|string|unique:influencer_codes',
-            'description' => 'nullable|string|max:255',
-        ]);
-
-        $code = $influencer->codes()->create($validated);
-
-        return response()->json($code, 201);
-    }
-
-    // 🗑️ Eliminar código
-    public function deleteCode($id, $codeId)
-    {
-        $code = InfluencerCode::where('influencer_id', $id)->findOrFail($codeId);
-        $code->delete();
-
-        return response()->json(['message' => 'Código eliminado correctamente']);
-    }
+ 
 }
