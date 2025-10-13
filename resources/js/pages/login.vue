@@ -1,173 +1,94 @@
 <script setup>
-import { useGenerateImageVariant } from '@/@core/composable/useGenerateImageVariant'
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
-import authV2LoginIllustrationBorderedDark from '@images/pages/auth-v2-login-illustration-bordered-dark.png'
-import authV2LoginIllustrationBorderedLight from '@images/pages/auth-v2-login-illustration-bordered-light.png'
-import authV2LoginIllustrationDark from '@images/pages/auth-v2-login-illustration-dark.png'
-import authV2LoginIllustrationLight from '@images/pages/auth-v2-login-illustration-light.png'
-import authV2LoginMaskDark from '@images/pages/auth-v2-login-mask-dark.png'
-import authV2LoginMaskLight from '@images/pages/auth-v2-login-mask-light.png'
-import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
-import { themeConfig } from '@themeConfig'
+import { useGenerateImageVariant } from "@/@core/composable/useGenerateImageVariant";
+import AuthProvider from "@/views/pages/authentication/AuthProvider.vue";
+import authV1LoginMaskDark from "@images/pages/auth-v1-login-mask-dark.png";
+import authV1LoginMaskLight from "@images/pages/auth-v1-login-mask-light.png";
+import { VNodeRenderer } from "@layouts/components/VNodeRenderer";
+import { themeConfig } from "@themeConfig";
 
 definePage({
   meta: {
-    layout: 'blank',
+    layout: "blank",
     public: true,
   },
-})
+});
 
 const form = ref({
-  email: '',
-  password: '',
+  email: "",
+  password: "",
   remember: false,
-})
+});
 
-const isPasswordVisible = ref(false)
-const authV2LoginMask = useGenerateImageVariant(authV2LoginMaskLight, authV2LoginMaskDark)
-const authV2LoginIllustration = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
+const authV1ThemeLoginMask = useGenerateImageVariant(
+  authV1LoginMaskLight,
+  authV1LoginMaskDark
+);
 </script>
 
 <template>
-  <a href="javascript:void(0)">
-    <div class="app-logo auth-logo">
-      <VNodeRenderer :nodes="themeConfig.app.logo" />
-      <h1 class="app-logo-title">
-        {{ themeConfig.app.title }}
-      </h1>
-    </div>
-  </a>
+  <div class="auth-wrapper d-flex align-center justify-center pa-4">
+    <VCard class="auth-card pa-1 pa-sm-7" max-width="448">
+      <VCardItem class="justify-center pb-6">
+        <VCardTitle>
+          <RouterLink to="/">
+            <div class="app-logo">
+              <VNodeRenderer :nodes="themeConfig.app.logo" />
+              <h1 class="app-logo-title">
+                {{ themeConfig.app.title }}
+              </h1>
+            </div>
+          </RouterLink>
+        </VCardTitle>
+      </VCardItem>
 
-  <VRow
-    no-gutters
-    class="auth-wrapper"
-  >
-    <VCol
-      md="8"
-      class="d-none d-md-flex align-center justify-center position-relative"
-    >
-      <div class="d-flex align-center justify-center pa-10">
-        <img
-          :src="authV2LoginIllustration"
-          class="auth-illustration w-100"
-          alt="auth-illustration"
-        >
-      </div>
-      <VImg
-        :src="authV2LoginMask"
-        class="d-none d-md-flex auth-footer-mask"
-        alt="auth-mask"
-      />
-    </VCol>
-    <VCol
-      cols="12"
-      md="4"
-      class="auth-card-v2 d-flex align-center justify-center"
-      style="background-color: rgb(var(--v-theme-surface));"
-    >
-      <VCard
-        flat
-        :max-width="500"
-        class="mt-12 mt-sm-0 pa-5 pa-lg-7"
-      >
-        <VCardText>
-          <h4 class="text-h4 mb-1">
-            Welcome to <span class="text-capitalize">{{ themeConfig.app.title }}! 👋🏻</span>
-          </h4>
+      <VCardText>
+        <h4 class="text-h4 mb-1">
+          Welcome to
+          <span class="text-capitalize">{{ themeConfig.app.title }}! 👋🏻</span>
+        </h4>
 
-          <p class="mb-0">
-            Please sign-in to your account and start the adventure
-          </p>
-        </VCardText>
+        <p class="mb-0">
+          Ingresa tu número de celular para acceder a tu panel de ventas.
+        </p>
+      </VCardText>
 
-        <VCardText>
-          <VForm @submit.prevent="() => {}">
-            <VRow>
-              <!-- email -->
-              <VCol cols="12">
-                <VTextField
-                  v-model="form.email"
-                  autofocus
-                  label="Email"
-                  type="email"
-                  placeholder="johndoe@email.com"
-                />
-              </VCol>
+      <VCardText>
+        <VForm @submit.prevent="() => {}">
+          <VRow>
+            <!-- Phone -->
+            <VCol cols="12">
+              <VTextField
+                v-model="form.phone_number"
+                label="Número de celular"
+                type="tel"
+                placeholder="+51 999 999 999"
+                required
+              />
+            </VCol>
 
-              <!-- password -->
-              <VCol cols="12">
-                <VTextField
-                  v-model="form.password"
-                  label="Password"
-                  placeholder="············"
-                  :type="isPasswordVisible ? 'text' : 'password'"
-                  autocomplete="password"
-                  :append-inner-icon="isPasswordVisible ? 'ri-eye-off-line' : 'ri-eye-line'"
-                  @click:append-inner="isPasswordVisible = !isPasswordVisible"
-                />
+            <VCol cols="12">
+              <div id="recaptcha-container"></div>
+            </VCol>
 
-                <!-- remember me checkbox -->
-                <div class="d-flex align-center justify-space-between flex-wrap my-6 gap-x-2">
-                  <VCheckbox
-                    v-model="form.remember"
-                    label="Remember me"
-                  />
+            <VCol cols="12">
+              <VBtn block type="submit" color="primary" :loading="loading">
+                Enviar código
+              </VBtn>
 
-                  <a
-                    class="text-primary"
-                    href="javascript:void(0)"
-                  >
-                    Forgot Password?
-                  </a>
-                </div>
-
-                <!-- login button -->
-                <VBtn
-                  block
-                  type="submit"
-                >
-                  Login
-                </VBtn>
-              </VCol>
-
-              <!-- create account -->
-              <VCol
-                cols="12"
-                class="text-body-1 text-center"
-              >
-                <span class="d-inline-block">
-                  New on our platform?
-                </span>
-                <a
-                  class="text-primary ms-1 d-inline-block text-body-1"
-                  href="javascript:void(0)"
-                >
-                  Create an account
-                </a>
-              </VCol>
-
-              <VCol
-                cols="12"
-                class="d-flex align-center"
-              >
-                <VDivider />
-                <span class="mx-4 text-high-emphasis">or</span>
-                <VDivider />
-              </VCol>
-
-              <!-- auth providers -->
-              <VCol
-                cols="12"
-                class="text-center"
-              >
-                <AuthProvider />
-              </VCol>
-            </VRow>
-          </VForm>
-        </VCardText>
-      </VCard>
-    </VCol>
-  </VRow>
+              <!-- Mensaje de error -->
+              <p v-if="errorMessage" class="text-error mt-2 text-center">
+                {{ errorMessage }}
+              </p>
+            </VCol>
+          </VRow>
+        </VForm>
+      </VCardText>
+    </VCard>
+    <VImg
+      :src="authV1ThemeLoginMask"
+      class="d-none d-md-block auth-footer-mask flip-in-rtl"
+    />
+  </div>
 </template>
 
 <style lang="scss">
