@@ -1,5 +1,6 @@
 <script setup>
 import { Spanish } from "flatpickr/dist/l10n/es.js";
+import ApexChartDataScience from "@/views/charts/apex-chart/ApexChartDataScience.vue";
 
 const searchQuery = ref("");
 const selectType = ref("ALL");
@@ -49,7 +50,11 @@ const page = ref(1);
 const sortBy = ref();
 const orderBy = ref();
 
-const { data: cartData, execute: fetchCart, isFetching } = await useApi(
+const {
+  data: cartData,
+  execute: fetchCart,
+  isFetching,
+} = await useApi(
   createUrl("cart-details", {
     query: {
       q: searchQuery,
@@ -71,6 +76,8 @@ const updateOptions = (options) => {
 
 const cart = computed(() => cartData.value.data);
 const total = computed(() => cartData.value.total);
+
+console.log();
 </script>
 
 <template>
@@ -108,6 +115,14 @@ const total = computed(() => cartData.value.total);
         </VRow>
       </VCardText>
     </VCard>
+    
+    <VRow id="apex-chart-wrapper">
+      <VCol cols="9">
+        <VCard class="mb-6">
+            <ApexChartDataScience :date-range="dateRange" coupon="CAMILA2025" />
+        </VCard>
+      </VCol>
+    </VRow>
 
     <VCard title="Detalle Entradas">
       <VCardText class="d-flex flex-wrap gap-4 align-center">
@@ -130,18 +145,21 @@ const total = computed(() => cartData.value.total);
         :items-length="total"
         class="text-no-wrap rounded-0"
         @update:options="updateOptions"
-        :loading=isFetching
+        :loading="isFetching"
         hover
       >
-      <template #item.price="{ item }">
-        <div
-          class="d-flex align-center gap-x-3"
-        >
-          <div class="d-flex flex-column">
-            <span class="text-base">{{ Number(item.price).toLocaleString('es-PE', { style: 'currency', currency: 'PEN' }) }}</span>
+        <template #item.price="{ item }">
+          <div class="d-flex align-center gap-x-3">
+            <div class="d-flex flex-column">
+              <span class="text-base">{{
+                Number(item.price).toLocaleString("es-PE", {
+                  style: "currency",
+                  currency: "PEN",
+                })
+              }}</span>
+            </div>
           </div>
-        </div>
-      </template>
+        </template>
         <!-- Pagination -->
         <template #bottom>
           <VDivider />

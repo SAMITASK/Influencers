@@ -467,12 +467,12 @@ export const getAreaChartSplineConfig = themeColors => {
 }
 export const getColumnChartConfig = themeColors => {
   const columnColors = {
-    series1: '#826af9',
-    series2: '#d2b0ff',
-    bg: '#f8d3ff',
+    series1: '#ED5C5C', // 🔴 Cambiar color aquí
+    series2: '#315527', // 🔵 Cambiar color aquí
+    bg: '#C9CCFF',
   }
 
-  const { themeSecondaryTextColor, themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+  const { themeSecondaryTextColor, themeBorderColor, themeDisabledTextColor, themePrimaryTextColor } = colorVariables(themeColors)
   
   return {
     chart: {
@@ -482,7 +482,7 @@ export const getColumnChartConfig = themeColors => {
       toolbar: { show: false },
     },
     fill: { opacity: 1 },
-    dataLabels: { enabled: false },
+    dataLabels: { enabled: true,  color: themePrimaryTextColor },
     colors: [columnColors.series1, columnColors.series2],
     legend: {
       position: 'top',
@@ -503,9 +503,9 @@ export const getColumnChartConfig = themeColors => {
     },
     plotOptions: {
       bar: {
-        columnWidth: '15%',
+        columnWidth: '30%',
         colors: {
-          backgroundBarRadius: 10,
+          backgroundBarRadius: 5,
           backgroundBarColors: [columnColors.bg, columnColors.bg, columnColors.bg, columnColors.bg, columnColors.bg],
         },
       },
@@ -519,17 +519,22 @@ export const getColumnChartConfig = themeColors => {
     yaxis: {
       labels: {
         style: { colors: themeDisabledTextColor },
+        formatter: (value) => Math.floor(value), // ✅ Sin decimales
       },
     },
     xaxis: {
       axisBorder: { show: false },
       axisTicks: { color: themeBorderColor },
-      categories: ['7/12', '8/12', '9/12', '10/12', '11/12', '12/12', '13/12', '14/12', '15/12'],
       crosshairs: {
         stroke: { color: themeBorderColor },
       },
       labels: {
         style: { colors: themeDisabledTextColor },
+      },
+    },
+    tooltip: {
+      y: {
+        formatter: (value) => `${value} entradas`, // ✅ Tooltip personalizado
       },
     },
     responsive: [

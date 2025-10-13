@@ -12,3 +12,4 @@ Route::prefix('influencers')->group(function () {
 });
 
 Route::get('/cart-details', [CartController::class, 'index']);
+Route::get('/cart-details/chart', [CartController::class, 'chartData']);
