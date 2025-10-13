@@ -10,7 +10,7 @@ const props = defineProps({
   },
   change: {
     type: Number,
-    required: true,
+    required: false,
   },
   desc: {
     type: String,
@@ -24,7 +24,7 @@ const props = defineProps({
     type: String,
     required: true,
   },
-})
+});
 </script>
 
 <template>
@@ -36,28 +36,23 @@ const props = defineProps({
             {{ title }}
           </div>
           <div class="d-flex align-center gap-x-2">
-            <h4 class="text-h4">
+            <h4 class="text-h2">
               {{ value }}
             </h4>
             <span
+              v-if="change"
               class="text-base"
               :class="change > 0 ? 'text-success' : 'text-error'"
-            >({{ prefixWithPlus(change) }}%)</span>
+            >
+              ({{ prefixWithPlus(change) }}%)
+            </span>
           </div>
           <div class="text-body-2">
             {{ desc }}
           </div>
         </div>
-        <VAvatar
-          :color="iconColor"
-          variant="tonal"
-          rounded="lg"
-          size="42"
-        >
-          <VIcon
-            :icon="icon"
-            size="26"
-          />
+        <VAvatar :color="iconColor" variant="tonal" rounded="lg" size="42">
+          <VIcon :icon="icon" size="26" />
         </VAvatar>
       </div>
     </VCardText>

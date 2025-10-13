@@ -503,7 +503,7 @@ export const getColumnChartConfig = themeColors => {
     },
     plotOptions: {
       bar: {
-        columnWidth: '30%',
+        columnWidth: '40%',
         colors: {
           backgroundBarRadius: 5,
           backgroundBarColors: [columnColors.bg, columnColors.bg, columnColors.bg, columnColors.bg, columnColors.bg],

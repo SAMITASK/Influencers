@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\CartDetailResource;
 use App\Models\CartDetail;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -29,8 +30,15 @@ class CartController extends Controller
         // 📅 Filtro por rango de fechas (fecha del carrito)
         $dateRange = $request->input('date');
 
-        if ($dateRange && strpos($dateRange, ' a ') !== false) {
-            [$from, $to] = explode(' a ', $dateRange);
+        if ($dateRange = $request->input('date')) {
+            if (strpos($dateRange, ' a ') !== false) {
+                [$from, $to] = explode(' a ', $dateRange);
+            } else {
+                $from = $to = $dateRange;
+            }
+
+            $from = Carbon::parse($from)->startOfDay();
+            $to   = Carbon::parse($to)->endOfDay();
 
             $query->whereHas('cart', function ($q) use ($from, $to) {
                 $q->whereBetween('dateCartFreg', [$from, $to]);
@@ -66,19 +74,25 @@ class CartController extends Controller
     {
         // 📅 PASO 1: Obtener y procesar el rango de fechas
         $dateRange = $request->input('date');
-        // Recibe: "2025-10-01 a 2025-10-13"
+        $type = $request->input('type');
 
-        if ($dateRange && strpos($dateRange, ' a ') !== false) {
-            // Verifica que exista y contenga " a "
-            [$from, $to] = explode(' a ', $dateRange);
-            // Divide el string en dos variables:
-            // $from = "2025-10-01"
-            // $to = "2025-10-13"
+        if ($dateRange = $request->input('date')) {
+            if (strpos($dateRange, ' a ') !== false) {
+                // Rango de fechas
+                [$from, $to] = explode(' a ', $dateRange);
+            } else {
+                // Solo un día
+                $from = $to = $dateRange;
+            }
         } else {
-            // Si no viene fecha, usa el mes actual por defecto
-            $from = now()->startOfMonth()->format('Y-m-d'); // "2025-10-01"
-            $to = now()->format('Y-m-d'); // "2025-10-13"
+            // No viene fecha, usar mes actual
+            $from = now()->startOfMonth()->format('Y-m-d');
+            $to   = now()->format('Y-m-d');
         }
+
+        // 🔹 Ajustar para que incluya todo el día
+        $from = Carbon::parse($from)->startOfDay()->format('Y-m-d H:i:s'); // 00:00:00
+        $to   = Carbon::parse($to)->endOfDay()->format('Y-m-d H:i:s');     // 23:59:5
 
         // 🔎 PASO 2: Obtener el cupón a filtrar
         $coupon = strtolower($request->input('coupon', 'CAMILA2025'));
@@ -87,16 +101,21 @@ class CartController extends Controller
 
         // 📊 PASO 3: Consulta SQL - Agrupar ventas por día y tipo
         $data = CartDetail::select(
-            DB::raw('DATE(cart.dateCartFreg) as date'),  // Extrae solo la fecha (sin hora)
-            'cartdet.intBoletoId',                        // ID del tipo de entrada (11 o 17)
-            DB::raw('COUNT(*) as total')                  // Cuenta cuántas ventas hubo
+            DB::raw('DATE(cart.dateCartFreg) as date'),
+            'cartdet.intBoletoId',
+            DB::raw('COUNT(*) as total')
         )
-            ->join('cart', 'cartdet.intCartId', '=', 'cart.intCartId')  // Une las tablas
-            ->whereRaw('LOWER(cartdet.coupon) = ?', [$coupon])          // Filtra por cupón
-            ->whereIn('cartdet.intBoletoId', [11, 17])                  // Solo General y Light
-            ->whereBetween('cart.dateCartFreg', [$from, $to])           // Entre las fechas
-            ->groupBy(DB::raw('DATE(cart.dateCartFreg)'), 'cartdet.intBoletoId')  // Agrupa por día y tipo
-            ->orderBy('date')                                            // Ordena por fecha
+            ->join('cart', 'cartdet.intCartId', '=', 'cart.intCartId')
+            ->whereRaw('LOWER(cartdet.coupon) = ?', [$coupon])
+            ->when($type === 'ALL', function ($query) {
+                $query->whereIn('cartdet.intBoletoId', [11, 17]);
+            })
+            ->when($type == 11 || $type == 17, function ($query) use ($type) {
+                $query->where('cartdet.intBoletoId', $type);
+            })
+            ->whereBetween('cart.dateCartFreg', [$from, $to])
+            ->groupBy(DB::raw('cart.dateCartFreg'), 'cartdet.intBoletoId')
+            ->orderBy('cart.dateCartFreg')
             ->get();
 
         /* Resultado ejemplo de $data:
@@ -110,8 +129,8 @@ class CartController extends Controller
 
         // 🗓️ PASO 4: Generar TODAS las fechas del rango
         $dates = [];
-        $fromDate = \Carbon\Carbon::parse($from);
-        $toDate = \Carbon\Carbon::parse($to);
+        $fromDate = Carbon::parse($from);
+        $toDate = Carbon::parse($to);
         $daysDiff = $fromDate->diffInDays($toDate) + 1;
 
         if ($daysDiff > 20) {

@@ -15,7 +15,7 @@ function formatDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-const dateRange = ref([formatDate(firstDayOfMonth), formatDate(today)]);
+const dateRange = ref(`${formatDate(firstDayOfMonth)} a ${formatDate(today)}`);
 
 const headers = [
   {
@@ -77,7 +77,43 @@ const updateOptions = (options) => {
 const cart = computed(() => cartData.value.data);
 const total = computed(() => cartData.value.total);
 
-console.log();
+const statisticsWithIcon = computed(() => {
+  const data = cartData.value?.data || [];
+
+  let total = data.length;
+  let totalFDT = 0;
+  let totalLight = 0;
+
+  data.forEach((item) => {
+    const type = (item.type || "").trim().toLowerCase();
+    if (type === "entrada general terror") totalFDT++;
+    if (type === "entrada light terror") totalLight++;
+  });
+
+  return [
+    {
+      title: "Total Entradas",
+      value: total.toLocaleString(),
+      desc: "Festival del Terror",
+      icon: "ri-ticket-line",
+      iconColor: "primary",
+    },
+    {
+      title: "Entradas General",
+      value: totalFDT.toLocaleString(),
+      desc: "Festival del Terror",
+      icon: "ri-ticket-2-line",
+      iconColor: "success",
+    },
+    {
+      title: "Entradas Light",
+      value: totalLight.toLocaleString(),
+      desc: "Festival del Terror",
+      icon: "ri-lightbulb-line",
+      iconColor: "warning",
+    },
+  ];
+});
 </script>
 
 <template>
@@ -115,15 +151,40 @@ console.log();
         </VRow>
       </VCardText>
     </VCard>
-    
-    <VRow id="apex-chart-wrapper">
-      <VCol cols="9">
+
+    <VRow id="apex-chart-wrapper" class="d-flex flex-wrap align-center">
+      <!-- Estadísticas -->
+      <VCol cols="12" md="3" class="mb-6">
+        <VRow>
+          <template v-if="isFetching">
+            <VCol cols="12" v-for="n in 3" :key="n">
+              <VSkeletonLoader type="image" height="100" />
+            </VCol>
+          </template>
+
+          <template v-else>
+            <VCol
+              cols="12"
+              v-for="stat in statisticsWithIcon"
+              :key="stat.title"
+            >
+              <CardStatisticsWithIcon v-bind="stat" />
+            </VCol>
+          </template>
+        </VRow>
+      </VCol>
+
+      <!-- Gráfico -->
+      <VCol cols="12" md="9" class="mb-4 mb-md-0">
         <VCard class="mb-6">
-            <ApexChartDataScience :date-range="dateRange" coupon="CAMILA2025" />
+          <ApexChartDataScience
+            :date-range="dateRange"
+            :type="selectType"
+            coupon="CAMILA2025"
+          />
         </VCard>
       </VCol>
     </VRow>
-
     <VCard title="Detalle Entradas">
       <VCardText class="d-flex flex-wrap gap-4 align-center">
         <VSpacer />

@@ -1,12 +1,14 @@
 <script setup>
 import { useTheme } from "vuetify";
 import { getColumnChartConfig } from "@core/libs/apex-chart/apexCharConfig";
+import { computed } from "vue";
 
 const props = defineProps({
   dateRange: {
     type: String, // ✅ Es un string, no array
     default: "",
   },
+  type: { type: [String, Number] },
   coupon: {
     type: String,
     default: "CAMILA2025",
@@ -19,7 +21,8 @@ const vuetifyTheme = useTheme();
 const { data: chartData, isFetching } = await useApi(
   createUrl("cart-details/chart", {
     query: {
-      date: computed(() => props.dateRange), 
+      date: computed(() => props.dateRange),
+      type: computed(() => props.type),
       coupon: computed(() => props.coupon),
     },
   })
