@@ -1,12 +1,12 @@
 export default [
   {
-    title: 'Home',
+    title: 'Dashboard',
     to: { name: 'root' },
-    icon: { icon: 'ri-home-smile-2-line' },
+    icon: { icon: 'ri-bar-chart-box-line' },
   },
   {
-    title: 'Second page',
+    title: 'Usuarios',
     to: { name: 'second-page' },
-    icon: { icon: 'ri-file-text-line' },
+    icon: { icon: 'ri-team-fill' },
   },
 ]
