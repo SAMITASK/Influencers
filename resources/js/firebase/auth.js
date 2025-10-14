@@ -1,26 +1,47 @@
-// resources/js/firebase/auth.js
 import { RecaptchaVerifier } from "firebase/auth";
 import { auth } from "./index";
 
-/**
- * Inicializa el reCAPTCHA.
- * Llama a esta función en onMounted() de tu login.
- */
-export const setupRecaptcha = () => {
-  if (!window.recaptchaVerifier) {
-    window.recaptchaVerifier = new RecaptchaVerifier(
-      "recaptcha-container", // ID del div en tu template
-      {
-        size: "normal", // "normal" para que se vea, invisible si quieres invisible
-        callback: (response) => {
-          console.log("reCAPTCHA verificado", response);
-        },
-      },
-      auth
-    );
 
-    window.recaptchaVerifier.render().then((widgetId) => {
-      window.recaptchaWidgetId = widgetId;
-    });
+
+export const setupRecaptcha = () => {
+  try {
+    console.log('🔍 Iniciando setup reCAPTCHA...');
+    
+    console.log("auth object:", auth);
+console.log("auth.app.name:", auth.app?.name);
+
+    // Limpiar el recaptcha existente si existe
+    if (window.recaptchaVerifier) {
+      console.log('🧹 Limpiando verificador anterior...');
+      window.recaptchaVerifier.clear();
+      delete window.recaptchaVerifier;
+    }
+
+    console.log('🔨 Creando RecaptchaVerifier...');
+    
+    window.recaptchaVerifier = new RecaptchaVerifier(
+      auth,
+      'recaptcha-container',
+      {
+        size: "normal",
+        callback: (response) => {
+          console.log("✅ reCAPTCHA verificado:", response);
+        },
+        'expired-callback': () => {
+          console.log("⚠️ reCAPTCHA expirado");
+        }
+      }
+    );
+    console.log("Tipo de RecaptchaVerifier:", RecaptchaVerifier.length);
+
+    console.log('🎨 Renderizando reCAPTCHA...');
+    // NO usar await - render() puede no ser una promesa en tu versión
+    window.recaptchaVerifier.render();
+    console.log('✅ reCAPTCHA configurado');
+    
+    return window.recaptchaVerifier;
+  } catch (error) {
+    console.error("❌ Error en setupRecaptcha:", error);
+    throw error;
   }
 };
