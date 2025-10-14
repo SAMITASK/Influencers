@@ -2,6 +2,12 @@
 import { Spanish } from "flatpickr/dist/l10n/es.js";
 import ApexChartDataScience from "@/views/charts/apex-chart/ApexChartDataScience.vue";
 
+definePage({
+  meta: {
+    requiresAuth: true,
+  },
+});
+
 const searchQuery = ref("");
 const selectType = ref("ALL");
 

@@ -64,3 +64,6 @@ public/mockServiceWorker.js
 # Env files
 .env*
 !.env.example
+
+#firebase
+storage/app/firebase/firebase-credentials.json

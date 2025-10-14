@@ -2,9 +2,44 @@
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import avatar1 from '@images/avatars/avatar-1.png'
 
+const router = useRouter()
+const loading = ref(false)
+
+// Obtener datos del usuario de la cookie
+const userData = useCookie('userData')
+const user = computed(() => userData.value || {})
+
 const userProfileList = [
   { type: 'divider' },
 ]
+
+const handleLogout = async () => {
+  loading.value = true
+  
+  try {
+    // Llamar al endpoint de logout
+    await $api('/auth/logout', {
+      method: 'POST',
+      onResponseError({ response }) {
+        console.error('Error en logout:', response._data?.message)
+      }
+    })
+    
+    console.log('✅ Sesión cerrada en el servidor')
+    
+  } catch (error) {
+    console.error('❌ Error al cerrar sesión:', error)
+  } finally {
+    // Siempre limpiar cookies (incluso si falla el endpoint)
+    useCookie('accessToken').value = null
+    useCookie('userData').value = null
+    
+    // Redirigir al login
+    router.replace('/login')
+    
+    loading.value = false
+  }
+}
 </script>
 
 <template>
@@ -90,9 +125,11 @@ const userProfileList = [
                 color="error"
                 size="small"
                 append-icon="ri-logout-box-r-line"
-                :to="{ name: 'login' }"
+                :loading="loading"
+                :disabled="loading"
+                @click="handleLogout"
               >
-                Cerrar Sesion
+                Cerrar Sesión
               </VBtn>
             </VListItem>
           </PerfectScrollbar>
