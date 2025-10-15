@@ -166,8 +166,6 @@ const statisticsWithIcon = computed(() => {
               label="Seleccionar Influencer"
               placeholder="Todos los influencers"
               :items="influencers"
-              clearable
-              clear-icon="ri-close-line"
             >
               <template #prepend-inner>
                 <VIcon icon="ri-user-star-line" />
