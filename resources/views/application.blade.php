@@ -2,64 +2,61 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <link rel="icon" href="{{ asset('favicon.ico') }}" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Materialize - Vuejs Admin Template</title>
-  <link rel="stylesheet" type="text/css" href="{{ asset('loader.css') }}" />
-  @vite(['resources/js/main.js'])
+    <meta charset="UTF-8" />
+    <link rel="icon" href="{{ asset('favicon.ico') }}" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portal de Códigos - Ventas</title>
+    <link rel="stylesheet" type="text/css" href="{{ asset('loader.css') }}" />
+    @vite(['resources/js/main.js'])
 </head>
 
 <body>
-  <div id="app">
-    <div id="loading-bg">
-      <div class="loading-logo">
-        <!-- svg logo -->
-        <svg width="86" height="46" viewBox="0 0 268 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="50.289" height="143.953" rx="25.144" transform="matrix(-.8652 .50142 .49859 .86684 195.571 0)"
-            fill="var(--initial-loader-color)" />
-          <rect width="50.289" height="143.953" rx="25.144" transform="matrix(-.8652 .50142 .49859 .86684 196.084 0)"
-            fill="url(#a)" fill-opacity=".4" />
-          <rect width="50.289" height="143.953" rx="25.144" transform="rotate(30.094 86.573 322.042) skewX(.187)"
-            fill="var(--initial-loader-color)" />
-          <rect width="50.289" height="143.953" rx="25.144" transform="matrix(-.8652 .50142 .49859 .86684 94.197 0)"
-            fill="var(--initial-loader-color)" />
-          <rect width="50.289" height="143.953" rx="25.144" transform="matrix(-.8652 .50142 .49859 .86684 94.197 0)"
-            fill="url(#b)" fill-opacity=".4" />
-          <rect width="50.289" height="143.953" rx="25.144" transform="rotate(30.094 35.886 133.493) skewX(.187)"
-            fill="var(--initial-loader-color)" />
-          <defs>
-            <linearGradient id="a" x1="25.144" y1="0" x2="25.144" y2="143.953" gradientUnits="userSpaceOnUse">
-              <stop />
-              <stop offset="1" stop-opacity="0" />
-            </linearGradient>
-            <linearGradient id="b" x1="25.144" y1="0" x2="25.144" y2="143.953" gradientUnits="userSpaceOnUse">
-              <stop />
-              <stop offset="1" stop-opacity="0" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-      <div class=" loading">
-        <div class="effect-1 effects"></div>
-        <div class="effect-2 effects"></div>
-        <div class="effect-3 effects"></div>
-      </div>
+    <div id="app">
+        <div id="loading-bg">
+            <div class="loading-logo">
+                <!-- svg logo -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="86" height="86" viewBox="0 0 40 40"
+                    fill="none">
+                    <!-- Fondo circular degradado -->
+                    <circle cx="20" cy="20" r="20" fill="url(#grad1)" />
+
+                    <!-- Letra P -->
+                    <path d="M12 10 L12 30 M12 10 L20 10 Q24 10 24 15 Q24 20 20 20 L12 20" stroke="white"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+                    <!-- Letra C -->
+                    <path d="M32 14 Q28 10 24 10 Q20 10 20 15 L20 25 Q20 30 24 30 Q28 30 32 26" stroke="white"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+
+            </div>
+            <div class=" loading">
+                <div class="effect-1 effects"></div>
+                <div class="effect-2 effects"></div>
+                <div class="effect-3 effects"></div>
+            </div>
+        </div>
     </div>
-  </div>
-  
-  <script>
-    const loaderColor = localStorage.getItem('materialize-initial-loader-bg') || '#FFFFFF'
-    const primaryColor = localStorage.getItem('materialize-initial-loader-color') || '#666CFF'
 
-    if (loaderColor)
-      document.documentElement.style.setProperty('--initial-loader-bg', loaderColor)
-    if (loaderColor)
-      document.documentElement.style.setProperty('--initial-loader-bg', loaderColor)
+    <script>
+        const loaderColor = localStorage.getItem('materialize-initial-loader-bg') || '#FFFFFF'
+        const primaryColor = localStorage.getItem('materialize-initial-loader-color') || '#666CFF'
 
-    if (primaryColor)
-      document.documentElement.style.setProperty('--initial-loader-color', primaryColor)
-  </script>
+        if (loaderColor)
+            document.documentElement.style.setProperty('--initial-loader-bg', loaderColor)
+        if (loaderColor)
+            document.documentElement.style.setProperty('--initial-loader-bg', loaderColor)
+
+        if (primaryColor)
+            document.documentElement.style.setProperty('--initial-loader-color', primaryColor)
+    </script>
 </body>
 
 </html>
