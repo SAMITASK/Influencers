@@ -14,19 +14,24 @@ class UserInfluencer extends Authenticatable
     protected $table = 'user_influencer';
     protected $primaryKey = 'id';
 
-
     protected $fillable = [
         'firebase_uid',
         'name',
         'phone_number',
         'email',
         'social_handle',
+        'code',
+        'code_description',
         'status',
     ];
 
-    public function codes()
+    // Ya no necesitas la relación codes() porque el código está directamente en este modelo
+    
+    /**
+     * Scope para buscar por código
+     */
+    public function scopeByCode($query, $code)
     {
-        return $this->hasMany(InfluencerCode::class, 'influencer_id', 'id')
-            ->select('id', 'influencer_id', 'code');
+        return $query->where('code', $code);
     }
 }

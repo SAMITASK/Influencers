@@ -16,17 +16,11 @@ return new class extends Migration
             $table->string('firebase_uid', 191)->unique()->nullable(); // ID de Firebase
             $table->string('name');
             $table->string('phone_number')->unique();
-            $table->string('email')->nullable();
+            $table->email('email')->nullable();
             $table->string('social_handle')->nullable(); // Ej: @usuario
+            $table->string('code')->unique(); // Código único del influencer
+            $table->string('code_description')->nullable(); // Descripción opcional del código
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->timestamps();
-        });
-
-        Schema::create('influencer_codes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('influencer_id')->constrained('user_influencer')->onDelete('cascade');
-            $table->string('code')->unique(); // el código que se usa en las entradas
-            $table->string('description')->nullable(); // ejemplo: "Promo Navidad"
             $table->timestamps();
         });
     }
@@ -36,7 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('influencer_codes');
         Schema::dropIfExists('user_influencer');
     }
 };

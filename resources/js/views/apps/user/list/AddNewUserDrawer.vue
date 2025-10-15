@@ -1,5 +1,5 @@
 <script setup>
-import { PerfectScrollbar } from "vue3-perfect-scrollbar";
+import { PerfectScrollbar } from "vue3-perfect-scrollbar"
 
 const props = defineProps({
   isDrawerOpen: {
@@ -15,105 +15,104 @@ const props = defineProps({
     default: () => ({}),
   },
   isLoading: Boolean,
-});
+})
 
-const emit = defineEmits(["update:isDrawerOpen", "userData", "userUpdated"]);
+const emit = defineEmits(["update:isDrawerOpen", "userData", "userUpdated"])
 
-// ✅ Corrección 1: Usar reactive correctamente
+// ✅ Errores locales actualizados
 const localErrors = reactive({
   name: [],
   phone_number: [],
   email: [],
   social_handle: [],
-  codes: [],
-});
+  code: [], // 🆕 Solo un código
+  code_description: [], // 🆕 Descripción del código
+})
 
-// ✅ Corrección 2: Watch para actualizar errores desde el padre
+// ✅ Watch para actualizar errores desde el padre
 watch(
   () => props.errors,
-  (newErrors) => {
+  newErrors => {
     // Limpiar errores anteriores
     Object.keys(localErrors).forEach(key => {
-      localErrors[key] = [];
-    });
+      localErrors[key] = []
+    })
     
     // Asignar nuevos errores
     if (newErrors && typeof newErrors === 'object') {
       Object.keys(newErrors).forEach(key => {
-        // 🔥 Manejar errores de arrays como codes.0, codes.1, etc.
-        if (key.startsWith('codes.')) {
-          localErrors.codes.push(...(Array.isArray(newErrors[key]) ? newErrors[key] : [newErrors[key]]));
-        } else if (newErrors[key]) {
+        if (newErrors[key]) {
           localErrors[key] = Array.isArray(newErrors[key]) 
             ? newErrors[key] 
-            : [newErrors[key]];
+            : [newErrors[key]]
         }
-      });
+      })
     }
   },
-  { deep: true, immediate: true }
-);
+  { deep: true, immediate: true },
+)
 
-const isFormValid = ref(false);
-const refForm = ref();
-const fullName = ref("");
-const phoneNumber = ref("");
-const email = ref("");
-const socialHandle = ref("");
-const codes = ref([]);
-const status = ref("active");
-const isEditing = ref(false);
+const isFormValid = ref(false)
+const refForm = ref()
+const fullName = ref("")
+const phoneNumber = ref("")
+const email = ref("")
+const socialHandle = ref("")
+const code = ref("") 
+const codeDescription = ref("")
+const status = ref("active")
+const isEditing = ref(false)
 
-// ✅ Corrección 4: Función para resetear formulario
+// ✅ Función para resetear formulario
 const resetForm = () => {
-  refForm.value?.reset();
-  refForm.value?.resetValidation();
-  fullName.value = "";
-  phoneNumber.value = "";
-  email.value = "";
-  socialHandle.value = "";
-  codes.value = [];
-  status.value = "active";
-  isEditing.value = false;
-  clearErrors();
-};
+  refForm.value?.reset()
+  refForm.value?.resetValidation()
+  fullName.value = ""
+  phoneNumber.value = ""
+  email.value = ""
+  socialHandle.value = ""
+  code.value = ""
+  codeDescription.value = ""
+  status.value = "active"
+  isEditing.value = false
+  clearErrors()
+}
 
-// ✅ Corrección 3: Función para limpiar errores
+// ✅ Función para limpiar errores
 const clearErrors = () => {
   Object.keys(localErrors).forEach(key => {
-    localErrors[key] = [];
-  });
-};
+    localErrors[key] = []
+  })
+}
 
 watch(
   () => props.editingUser,
-  (newInfluencer) => {
+  newInfluencer => {
     if (newInfluencer) {
-      isEditing.value = true;
-      fullName.value = newInfluencer.name || "";
-      phoneNumber.value = newInfluencer.phone || "";
-      email.value = newInfluencer.email || "";
-      socialHandle.value = newInfluencer.social || "";
-      codes.value = newInfluencer.codes
-        ? newInfluencer.codes.split(",").map((c) => c.trim())
-        : [];
-      status.value = newInfluencer.status || "active";
+      isEditing.value = true
+      fullName.value = newInfluencer.name || ""
+      phoneNumber.value = newInfluencer.phone || ""
+      email.value = newInfluencer.email || ""
+      socialHandle.value = newInfluencer.social || ""
+      code.value = newInfluencer.code || "" // 🆕
+      codeDescription.value = newInfluencer.code_description || "" // 🆕
+      status.value = newInfluencer.status || "active"
     } else {
-      resetForm();
+      resetForm()
     }
   },
-  { immediate: true }
-);
+  { immediate: true },
+)
 
 const closeNavigationDrawer = () => {
-  emit("update:isDrawerOpen", false);
+  emit("update:isDrawerOpen", false)
   nextTick(() => {
-    resetForm();
-  });
-};
+    resetForm()
+  })
+}
 
 const onSubmit = () => {
-  clearErrors(); // Limpiar errores anteriores antes de validar
+  clearErrors() // Limpiar errores anteriores antes de validar
   
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
@@ -122,28 +121,29 @@ const onSubmit = () => {
         phone_number: phoneNumber.value,
         email: email.value,
         social_handle: socialHandle.value,
-        codes: codes.value,
+        code: code.value, // 🆕 Un solo código
+        code_description: codeDescription.value, // 🆕
         status: status.value,
-      };
+      }
 
       if (isEditing.value && props.editingUser) {
-        influencerData.id = props.editingUser.id;
-        emit("userUpdated", influencerData);
+        influencerData.id = props.editingUser.id
+        emit("userUpdated", influencerData)
       } else {
-        emit("userData", influencerData);
+        emit("userData", influencerData)
       }
     }
-  });
-};
+  })
+}
 
-const handleDrawerModelValueUpdate = (val) => {
-  emit("update:isDrawerOpen", val);
-};
+const handleDrawerModelValueUpdate = val => {
+  emit("update:isDrawerOpen", val)
+}
 
 // ✅ Exponer resetForm para que el padre pueda usarlo
 defineExpose({
   resetForm,
-});
+})
 </script>
 
 <template>
@@ -166,7 +166,11 @@ defineExpose({
     <PerfectScrollbar :options="{ wheelPropagation: false }">
       <VCard flat>
         <VCardText>
-          <VForm ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
+          <VForm 
+            ref="refForm" 
+            v-model="isFormValid" 
+            @submit.prevent="onSubmit"
+          >
             <VRow>
               <VCol cols="12">
                 <VTextField
@@ -207,13 +211,23 @@ defineExpose({
               </VCol>
 
               <VCol cols="12">
-                <VCombobox
-                  v-model="codes"
-                  label="Códigos Activos"
-                  placeholder="Escribe un código y presiona Enter"
-                  multiple
-                  chips
-                  :error-messages="localErrors.codes"
+                <VTextField
+                  v-model="code"
+                  label="Código del Influencer"
+                  placeholder="CODIGO2024"
+                  :rules="[requiredValidator]"
+                  :error-messages="localErrors.code"
+                  hint="Código único que se usará en las entradas"
+                  persistent-hint
+                />
+              </VCol>
+
+              <VCol cols="12">
+                <VTextField
+                  v-model="codeDescription"
+                  label="Descripción del Código (opcional)"
+                  placeholder="Ej: Promo Navidad 2024"
+                  :error-messages="localErrors.code_description"
                 />
               </VCol>
 
@@ -231,20 +245,21 @@ defineExpose({
 
               <VCol cols="12">
                 <VBtn 
-                type="submit" 
-                class="me-4"     
-                :loading="isLoading"
-                :disabled="isLoading">
+                  type="submit" 
+                  class="me-4"     
+                  :loading="isLoading"
+                  :disabled="isLoading"
+                >
                   {{ isEditing ? "Actualizar" : "Guardar" }}
                 </VBtn>
                 <VBtn
-                    type="reset"
-                    variant="outlined"
-                    color="error"
-                    @click="closeNavigationDrawer"
-                    :disabled="isLoading"
-                  >
-                    Cancelar
+                  type="reset"
+                  variant="outlined"
+                  color="error"
+                  @click="closeNavigationDrawer"
+                  :disabled="isLoading"
+                >
+                  Cancelar
                 </VBtn>
               </VCol>
             </VRow>

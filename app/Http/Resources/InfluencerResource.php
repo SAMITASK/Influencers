@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class InfluencerResource extends JsonResource
@@ -20,8 +19,9 @@ class InfluencerResource extends JsonResource
             'social' => $this->social_handle,
             'email'  => $this->email,
             'phone'  => $this->phone_number,
-            'codes'  => $this->codes->pluck('code')->implode(', '),
-            'status' => $this->status, // Ej: "Active"
+            'code'   => $this->code,
+            'code_description' => $this->code_description,
+            'status' => $this->status,
             'actions' => [
                 'view'   => true,
                 'edit'   => true,

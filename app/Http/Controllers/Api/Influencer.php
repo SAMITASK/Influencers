@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\InfluencerRequest;
 use App\Http\Resources\InfluencerResource;
-use App\Models\InfluencerCode;
 use App\Models\UserInfluencer;
 use Illuminate\Http\Request;
 
@@ -13,7 +12,7 @@ class Influencer extends Controller
 {
     public function index(Request $request)
     {
-        $query = UserInfluencer::with(['codes:id,influencer_id,code']);
+        $query = UserInfluencer::query();
 
         // 🔍 Búsqueda
         if ($request->filled('q')) {
@@ -21,12 +20,13 @@ class Influencer extends Controller
                 $q2->where('name', 'like', "%{$request->q}%")
                     ->orWhere('phone_number', 'like', "%{$request->q}%")
                     ->orWhere('email', 'like', "%{$request->q}%")
-                    ->orWhere('social_handle', 'like', "%{$request->q}%");
+                    ->orWhere('social_handle', 'like', "%{$request->q}%")
+                    ->orWhere('code', 'like', "%{$request->q}%"); // 🆕 Búsqueda por código
             });
         }
 
         // 📌 Orden
-        $allowed = ['name', 'email', 'phone_number', 'status'];
+        $allowed = ['name', 'email', 'phone_number', 'status', 'code'];
         $sortBy = $request->input('sortBy', 'name');
         $orderBy = $request->input('orderBy', 'asc');
 
@@ -48,25 +48,16 @@ class Influencer extends Controller
     }
 
     // ➕ Crear influencer
-    public function store(InfluencerRequest  $request)
+    public function store(InfluencerRequest $request)
     {
         try {
-            // 1️⃣ Crear influencer
+            // 1️⃣ Crear influencer con código incluido
             $influencer = UserInfluencer::create($request->validated());
 
-            // 2️⃣ Guardar códigos si existen
-            if ($request->filled('codes')) {
-                foreach ($request->codes as $code) {
-                    $influencer->codes()->create([
-                        'code' => $code,
-                    ]);
-                }
-            }
-
-            // 3️⃣ Retornar influencer con códigos
+            // 2️⃣ Retornar influencer creado
             return response()->json([
                 'message' => 'Influencer creado correctamente.',
-                'data' => $influencer->load('codes') // incluir los códigos en la respuesta
+                'data' => $influencer
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -82,32 +73,14 @@ class Influencer extends Controller
         try {
             $influencer = UserInfluencer::findOrFail($id);
 
-            // 1️⃣ Actualizar datos del influencer
+            // 1️⃣ Actualizar datos del influencer (incluye el código)
             $influencer->update($request->validated());
 
-            // 2️⃣ Sincronizar códigos si se enviaron
-            if ($request->has('codes')) {
-                $existingCodes = $influencer->codes->pluck('code')->toArray();
-                $newCodes = $request->codes;
-
-                // 1️⃣ Eliminar los que ya no estén
-                $influencer->codes()
-                    ->whereNotIn('code', $newCodes)
-                    ->delete();
-
-                // 2️⃣ Agregar los nuevos que no existan
-                foreach ($newCodes as $code) {
-                    if (!in_array($code, $existingCodes)) {
-                        $influencer->codes()->create(['code' => $code]);
-                    }
-                }
-            }
-
-            // 3️⃣ Retornar influencer actualizado con códigos
+            // 2️⃣ Retornar influencer actualizado
             return response()->json([
                 'success' => true,
                 'message' => 'Influencer actualizado correctamente.',
-                'data' => $influencer->load('codes')
+                'data' => $influencer
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -117,5 +90,4 @@ class Influencer extends Controller
             ], 500);
         }
     }
- 
 }

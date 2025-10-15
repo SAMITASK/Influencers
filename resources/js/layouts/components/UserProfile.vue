@@ -22,7 +22,7 @@ const handleLogout = async () => {
       method: 'POST',
       onResponseError({ response }) {
         console.error('Error en logout:', response._data?.message)
-      }
+      },
     })
     
     console.log('✅ Sesión cerrada en el servidor')

@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\InfluencerCode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,7 +24,6 @@ class InfluencerRequest extends FormRequest
     {
         // Detectar si es actualización (tiene ID en la ruta)
         $influencerId = $this->route('id') ?? $this->route('influencer');
-        $isUpdate = !is_null($influencerId);
 
         return [
             'name' => 'required|string|max:255',
@@ -42,21 +40,13 @@ class InfluencerRequest extends FormRequest
             ],
             'social_handle' => 'nullable|string|max:255',
             'status' => 'in:active,inactive',
-            'codes' => 'nullable|array',
-            'codes.*' => [
+            'code' => [ // 🆕 Solo un código
                 'required',
                 'string',
                 'max:50',
-                function ($attribute, $value, $fail) use ($influencerId) {
-                    $exists = InfluencerCode::where('code', $value)
-                        ->when($influencerId, fn($q) => $q->where('influencer_id', '!=', $influencerId))
-                        ->exists();
-
-                    if ($exists) {
-                        $fail("El código '{$value}' ya está asignado a otro influencer.");
-                    }
-                },
+                Rule::unique('user_influencer', 'code')->ignore($influencerId)
             ],
+            'code_description' => 'nullable|string|max:255', // 🆕 Descripción opcional
         ];
     }
 
@@ -65,9 +55,11 @@ class InfluencerRequest extends FormRequest
         return [
             'name.required' => 'El nombre es obligatorio.',
             'phone_number.required' => 'El número de teléfono es obligatorio.',
-            'phone_number.unique' => 'El número ya existe.',
+            'phone_number.unique' => 'El número ya está registrado.',
             'email.unique' => 'El correo ya está registrado.',
-            'codes.*.required' => 'Los códigos no pueden estar vacíos.',
+            'code.required' => 'El código es obligatorio.', // 🆕
+            'code.unique' => 'El código ya está asignado a otro influencer.', // 🆕
+            'code.max' => 'El código no puede tener más de 50 caracteres.', // 🆕
         ];
     }
 }

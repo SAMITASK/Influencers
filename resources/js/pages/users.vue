@@ -1,21 +1,21 @@
 <script setup>
-import AddNewUserDrawer from "@/views/apps/user/list/AddNewUserDrawer.vue";
+import AddNewUserDrawer from "@/views/apps/user/list/AddNewUserDrawer.vue"
 
-const isLoading = ref(false);
-const searchQuery = ref("");
+const isLoading = ref(false)
+const searchQuery = ref("")
 
 // Data table options
-const itemsPerPage = ref(10);
-const page = ref(1);
-const sortBy = ref();
-const orderBy = ref();
-const selectedRows = ref([]);
+const itemsPerPage = ref(10)
+const page = ref(1)
+const sortBy = ref()
+const orderBy = ref()
+const selectedRows = ref([])
 
-const updateOptions = (options) => {
-  page.value = options.page;
-  sortBy.value = options.sortBy[0]?.key;
-  orderBy.value = options.sortBy[0]?.order;
-};
+const updateOptions = options => {
+  page.value = options.page
+  sortBy.value = options.sortBy[0]?.key
+  orderBy.value = options.sortBy[0]?.order
+}
 
 // Headers
 const headers = [
@@ -47,11 +47,11 @@ const headers = [
     width: "140px",
   },
   {
-    title: "🏷️ Códigos Activos",
-    key: "codes",
+    title: "🏷️ Código",
+    key: "code",
     align: "center",
-    sortable: false,
-    width: "220px",
+    sortable: true,
+    width: "180px",
   },
   {
     title: "🔖 Estado",
@@ -67,7 +67,7 @@ const headers = [
     sortable: false,
     width: "120px",
   },
-];
+]
 
 const { data: usersData, execute: fetchUsers, isFetching } = await useApi(
   createUrl("influencers", {
@@ -78,68 +78,68 @@ const { data: usersData, execute: fetchUsers, isFetching } = await useApi(
       sortBy,
       orderBy,
     },
-  })
-);
+  }),
+)
 
-const users = computed(() => usersData.value.data);
-const totalUsers = computed(() => usersData.value.totalUsers);
+const users = computed(() => usersData.value.data)
+const totalUsers = computed(() => usersData.value.totalUsers)
 
-console.log(usersData.value.data);
+console.log(usersData.value.data)
 
 
-const resolveUserStatusVariant = (stat) => {
-  const statLowerCase = stat.toLowerCase();
-  if (statLowerCase === "pending") return "warning";
-  if (statLowerCase === "active") return "success";
-  if (statLowerCase === "inactive") return "secondary";
+const resolveUserStatusVariant = stat => {
+  const statLowerCase = stat.toLowerCase()
+  if (statLowerCase === "pending") return "warning"
+  if (statLowerCase === "active") return "success"
+  if (statLowerCase === "inactive") return "secondary"
 
-  return "primary";
-};
+  return "primary"
+}
 
-const translateStatus = (status) => {
-  if (!status) return "";
-  const s = status.toLowerCase();
-  if (s === "active") return "Activo";
-  if (s === "inactive") return "Inactivo";
-  if (s === "pending") return "Pendiente";
-  return status;
-};
+const translateStatus = status => {
+  if (!status) return ""
+  const s = status.toLowerCase()
+  if (s === "active") return "Activo"
+  if (s === "inactive") return "Inactivo"
+  if (s === "pending") return "Pendiente"
+  return status
+}
 
-const isAddNewUserDrawerVisible = ref(false);
-const editingUser = ref(null);
-const errors = ref({});
+const isAddNewUserDrawerVisible = ref(false)
+const editingUser = ref(null)
+const errors = ref({})
 
 // ✅ Corrección: Referencia al drawer para resetear
-const drawerRef = ref(null);
+const drawerRef = ref(null)
 
 // ✅ Mejora: Función para crear usuario con mejor manejo de errores
-const addNewUser = async (userData) => {
-  errors.value = {}; // Limpiar errores previos
-  isLoading.value = true;
+const addNewUser = async userData => {
+  errors.value = {} // Limpiar errores previos
+  isLoading.value = true
 
   try {
     await $api("influencers", {
       method: "POST",
       body: userData,
-    });
+    })
 
     // Si llegamos aquí, la petición fue exitosa
-    await fetchUsers();
-    isAddNewUserDrawerVisible.value = false;
-    drawerRef.value?.resetForm(); // Resetear usando el método expuesto
+    await fetchUsers()
+    isAddNewUserDrawerVisible.value = false
+    drawerRef.value?.resetForm() // Resetear usando el método expuesto
 
     showSnackbar({
       message: "Influencer creado correctamente",
       color: "primary",
-    });
+    })
   } catch (error) {
     // Verificar si hay errores de validación del servidor
     if (error.response?._data?.errors) {
-      errors.value = error.response._data.errors;
+      errors.value = error.response._data.errors
       showSnackbar({
         message: "Por favor corrige los errores del formulario",
         color: "warning",
-      });
+      })
     } else {
       // Error general
       showSnackbar({
@@ -147,82 +147,82 @@ const addNewUser = async (userData) => {
           error.response?._data?.message ||
           "Error al crear usuario. Contactar con sistemas.",
         color: "error",
-      });
+      })
     }
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
 const openCreateModal = () => {
-  editingUser.value = null;
-  errors.value = {}; // Limpiar errores
-  isAddNewUserDrawerVisible.value = true;
-};
+  editingUser.value = null
+  errors.value = {} // Limpiar errores
+  isAddNewUserDrawerVisible.value = true
+}
 
-const editUser = (user) => {
-  editingUser.value = user;
-  errors.value = {}; // Limpiar errores
-  isAddNewUserDrawerVisible.value = true;
-};
+const editUser = user => {
+  editingUser.value = user
+  errors.value = {} // Limpiar errores
+  isAddNewUserDrawerVisible.value = true
+}
 
 // ✅ Mejora: Función para actualizar usuario con manejo de errores
-const updateUser = async (userData) => {
-  errors.value = {};
-  isLoading.value = true;
+const updateUser = async userData => {
+  errors.value = {}
+  isLoading.value = true
 
   try {
     const response = await $api(`influencers/${userData.id}`, {
       method: "PUT",
       body: userData,
-    });
+    })
 
-    await fetchUsers();
-    isAddNewUserDrawerVisible.value = false;
-    drawerRef.value?.resetForm();
+    await fetchUsers()
+    isAddNewUserDrawerVisible.value = false
+    drawerRef.value?.resetForm()
 
     showSnackbar({
       message: response.message, // <-- viene de Laravel
       color: "primary",
-    });
+    })
   } catch (error) {
     if (error.response?.data?.errors) {
-      errors.value = error.response.data.errors;
+      errors.value = error.response.data.errors
 
       showSnackbar({
         message: "Por favor corrige los errores del formulario",
         color: "warning",
-      });
+      })
     } else {
       showSnackbar({
         message:
           error.response?.message ||
           "Error al actualizar usuario. Contactar con sistemas.",
         color: "error",
-      });
+      })
     }
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
-const handleUserData = (userData) => {
+const handleUserData = userData => {
   if (userData.id) {
-    updateUser(userData);
+    updateUser(userData)
   } else {
-    addNewUser(userData);
+    addNewUser(userData)
   }
-};
+}
 
-const isSnackbarVisible = ref(false);
-const colorSnackbar = ref("primary");
-const messageSnackbar = ref("");
+const isSnackbarVisible = ref(false)
+const colorSnackbar = ref("primary")
+const messageSnackbar = ref("")
 
 const showSnackbar = ({ message, color = "success" }) => {
-  messageSnackbar.value = message;
-  colorSnackbar.value = color;
-  isSnackbarVisible.value = true;
-};
+  messageSnackbar.value = message
+  colorSnackbar.value = color
+  isSnackbarVisible.value = true
+}
 </script>
 
 <template>
@@ -238,7 +238,11 @@ const showSnackbar = ({ message, color = "success" }) => {
               density="compact"
             />
           </div>
-          <VBtn @click="openCreateModal()"> Nuevo Usuario </VBtn>
+          <VBtn 
+            @click="openCreateModal"
+          > 
+            Nuevo Usuario 
+          </VBtn>
         </div>
       </VCardText>
 
@@ -254,6 +258,25 @@ const showSnackbar = ({ message, color = "success" }) => {
         @update:options="updateOptions"
         :loading="isFetching"
       >
+        <!-- 🆕 Mostrar código único -->
+        <template #item.code="{ item }">
+          <VChip
+            v-if="item.code"
+            color="primary"
+            variant="tonal"
+            size="small"
+            class="font-weight-medium"
+          >
+            {{ item.code }}
+          </VChip>
+          <span 
+            v-else 
+            class="text-disabled"
+          >
+            Sin código
+          </span>
+        </template>
+
         <!-- Status -->
         <template #item.status="{ item }">
           <VChip
@@ -267,10 +290,12 @@ const showSnackbar = ({ message, color = "success" }) => {
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-          <IconBtn size="small" @click="editUser(item)">
+          <IconBtn 
+            size="small" 
+            @click="editUser(item)"
+          >
             <VIcon icon="ri-edit-box-line" />
           </IconBtn>
-
         </template>
 
         <!-- Pagination -->

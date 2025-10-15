@@ -72,14 +72,16 @@ class AuthController extends Controller
 
             // 🔥 Retornar en el MISMO formato que tu login que funciona
             return response()->json([
-                'accessToken' => $token, // ← Cambiado de access_token
+                'accessToken' => $token,
                 'token_type' => 'Bearer',
-                'userData' => [ // ← Cambiado de user
+                'userData' => [
                     'id' => $user->id,
                     'name' => $user->name,
                     'phone_number' => $user->phone_number,
                     'email' => $user->email,
                     'social_handle' => $user->social_handle,
+                    'code' => $user->code,
+                    'code_description' => $user->code_description,
                     'status' => $user->status,
                 ],
             ]);
