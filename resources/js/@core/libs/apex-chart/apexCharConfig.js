@@ -479,7 +479,7 @@ export const getColumnChartConfig = themeColors => {
       offsetX: -10,
       stacked: true,
       parentHeightOffset: 0,
-      toolbar: { show: false },
+      toolbar: { show: true },
     },
     fill: { opacity: 1 },
     dataLabels: { enabled: true,  color: themePrimaryTextColor },
