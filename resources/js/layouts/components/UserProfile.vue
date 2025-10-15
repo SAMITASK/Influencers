@@ -74,10 +74,10 @@ const handleLogout = async () => {
 
               <div>
                 <div class="text-body-2 font-weight-medium text-high-emphasis">
-                  John Doe
+                  {{ user.name || 'Usuario' }}
                 </div>
                 <div class="text-capitalize text-caption text-disabled">
-                  Admin
+                  {{ user.social_handle || user.code || 'Sin identificador' }}
                 </div>
               </div>
             </div>

@@ -14,9 +14,20 @@ class CartController extends Controller
     {
         $query = CartDetail::with('cart');
 
-        // 🔎 Filtro por cupón
-        $coupon = strtolower($request->coupon);
-        $query->whereRaw('LOWER(coupon) = ?', ['camila2025']);
+        // 🔎 Filtro por cupón del influencer autenticado
+        $user = $request->user(); // Usuario autenticado via Sanctum
+        
+        if ($user && $user->code) {
+            $query->whereRaw('LOWER(coupon) = ?', [strtolower($user->code)]);
+        } else {
+            // Si no hay usuario autenticado o no tiene código, no mostrar nada
+            return response()->json([
+                'data' => [],
+                'total' => 0,
+                'per_page' => 10,
+                'current_page' => 1,
+            ]);
+        }
 
         $type = $request->input('type');
 
@@ -72,7 +83,22 @@ class CartController extends Controller
 
     public function chartData(Request $request)
     {
-        // 📅 PASO 1: Obtener y procesar el rango de fechas
+        // 🔎 PASO 1: Obtener el código del influencer autenticado
+        $user = $request->user();
+        
+        if (!$user || !$user->code) {
+            return response()->json([
+                'series' => [
+                    ['name' => 'Entrada General', 'data' => []],
+                    ['name' => 'Entrada Light', 'data' => []],
+                ],
+                'categories' => [],
+            ]);
+        }
+
+        $coupon = strtolower($user->code);
+
+        // 📅 PASO 2: Obtener y procesar el rango de fechas
         $dateRange = $request->input('date');
         $type = $request->input('type');
 
@@ -91,13 +117,8 @@ class CartController extends Controller
         }
 
         // 🔹 Ajustar para que incluya todo el día
-        $from = Carbon::parse($from)->startOfDay()->format('Y-m-d H:i:s'); // 00:00:00
-        $to   = Carbon::parse($to)->endOfDay()->format('Y-m-d H:i:s');     // 23:59:5
-
-        // 🔎 PASO 2: Obtener el cupón a filtrar
-        $coupon = strtolower($request->input('coupon', 'CAMILA2025'));
-        // Convierte a minúsculas: "camila2025"
-        // Si no viene, usa "CAMILA2025" por defecto
+        $from = Carbon::parse($from)->startOfDay()->format('Y-m-d H:i:s');
+        $to   = Carbon::parse($to)->endOfDay()->format('Y-m-d H:i:s');
 
         // 📊 PASO 3: Consulta SQL - Agrupar ventas por día y tipo
         $data = CartDetail::select(
@@ -114,18 +135,9 @@ class CartController extends Controller
                 $query->where('cartdet.intBoletoId', $type);
             })
             ->whereBetween('cart.dateCartFreg', [$from, $to])
-            ->groupBy(DB::raw('cart.dateCartFreg'), 'cartdet.intBoletoId')
-            ->orderBy('cart.dateCartFreg')
+            ->groupBy(DB::raw('DATE(cart.dateCartFreg)'), 'cartdet.intBoletoId')
+            ->orderBy(DB::raw('DATE(cart.dateCartFreg)'))
             ->get();
-
-        /* Resultado ejemplo de $data:
-    [
-        { date: "2025-10-01", intBoletoId: 11, total: 5 },
-        { date: "2025-10-01", intBoletoId: 17, total: 3 },
-        { date: "2025-10-03", intBoletoId: 11, total: 8 },
-        // No hay datos para 2025-10-02 (día sin ventas)
-    ]
-    */
 
         // 🗓️ PASO 4: Generar TODAS las fechas del rango
         $dates = [];
@@ -147,24 +159,12 @@ class CartController extends Controller
             }
         }
 
-        /* Resultado de $dates:
-    [
-        "2025-10-01",
-        "2025-10-02",
-        "2025-10-03",
-        ...
-        "2025-10-13"
-    ]
-    */
-
         // 📦 PASO 5: Preparar arrays para ApexCharts
-        $general = [];      // Ventas de Entrada General (ID 11)
-        $light = [];        // Ventas de Entrada Light (ID 17)
-        $categories = [];   // Etiquetas del eje X
+        $general = [];
+        $light = [];
+        $categories = [];
 
         foreach ($dates as $date) {
-            // Para CADA día del rango (incluso si no hubo ventas)
-
             // Buscar si hubo ventas de Entrada General ese día
             $generalSale = $data->where('date', $date)
                 ->where('intBoletoId', 11)
@@ -183,25 +183,19 @@ class CartController extends Controller
             $categories[] = \Carbon\Carbon::parse($date)->format('d/m');
         }
 
-        /* Resultado final:
-    $general = [5, 0, 8, 12, 0, ...]    // 0 en días sin ventas
-    $light = [3, 0, 4, 7, 0, ...]       // 0 en días sin ventas
-    $categories = ["01/10", "02/10", "03/10", ...]
-    */
-
         // 🎯 PASO 6: Retornar JSON en formato ApexCharts
         return response()->json([
             'series' => [
                 [
                     'name' => 'Entrada General',
-                    'data' => $general,  // [5, 0, 8, 12, ...]
+                    'data' => $general,
                 ],
                 [
                     'name' => 'Entrada Light',
-                    'data' => $light,    // [3, 0, 4, 7, ...]
+                    'data' => $light,
                 ],
             ],
-            'categories' => $categories,  // ["01/10", "02/10", ...]
+            'categories' => $categories,
         ]);
     }
 }

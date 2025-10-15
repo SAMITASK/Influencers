@@ -1,27 +1,27 @@
 <script setup>
-import { Spanish } from "flatpickr/dist/l10n/es.js";
-import ApexChartDataScience from "@/views/charts/apex-chart/ApexChartDataScience.vue";
+import { Spanish } from "flatpickr/dist/l10n/es"
+import ApexChartDataScience from "@/views/charts/apex-chart/ApexChartDataScience.vue"
 
 definePage({
   meta: {
     requiresAuth: true,
   },
-});
+})
 
-const searchQuery = ref("");
-const selectType = ref("ALL");
+const searchQuery = ref("")
+const selectType = ref("ALL")
 
-const today = new Date();
-const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+const today = new Date()
+const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
 
 function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
-const dateRange = ref(`${formatDate(firstDayOfMonth)} a ${formatDate(today)}`);
+const dateRange = ref(`${formatDate(firstDayOfMonth)} a ${formatDate(today)}`)
 
 const headers = [
   {

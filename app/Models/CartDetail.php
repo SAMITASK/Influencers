@@ -17,6 +17,12 @@ class CartDetail extends Model
         'intBoletoId'
     ];
 
+    protected $casts = [
+        'intBoletoId' => 'integer',
+        'intCartdetId' => 'integer',
+        'intCartId' => 'integer',
+    ];
+
     public static function boot()
     {
         parent::boot();
