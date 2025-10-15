@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\CartDetailResource;
 use App\Models\CartDetail;
+use App\Models\UserInfluencer;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,21 +13,41 @@ class CartController extends Controller
 {
     public function index(Request $request)
     {
-        $query = CartDetail::with('cart');
+        $query = CartDetail::with(['cart', 'influencer']); // 👈 Agregamos relación
+        $user = $request->user();
 
-        // 🔎 Filtro por cupón del influencer autenticado
-        $user = $request->user(); // Usuario autenticado via Sanctum
-        
-        if ($user && $user->code) {
-            $query->whereRaw('LOWER(coupon) = ?', [strtolower($user->code)]);
-        } else {
-            // Si no hay usuario autenticado o no tiene código, no mostrar nada
+        // 🔐 Verificar autenticación
+        if (!$user) {
             return response()->json([
                 'data' => [],
                 'total' => 0,
                 'per_page' => 10,
                 'current_page' => 1,
             ]);
+        }
+
+        // 👑 Si es ADMIN
+        if ($user->isAdmin()) {
+            $influencerFilter = $request->input('influencer');
+
+            if ($influencerFilter && $influencerFilter !== 'ALL') {
+                // Filtrar por un influencer específico
+                $query->whereRaw('LOWER(coupon) = ?', [strtolower($influencerFilter)]);
+            }
+            // Si no selecciona influencer o es 'ALL', muestra TODAS las ventas (con o sin cupón)
+        }
+        // 🎤 Si es INFLUENCER
+        else if ($user->isInfluencer()) {
+            if ($user->code) {
+                $query->whereRaw('LOWER(coupon) = ?', [strtolower($user->code)]);
+            } else {
+                return response()->json([
+                    'data' => [],
+                    'total' => 0,
+                    'per_page' => 10,
+                    'current_page' => 1,
+                ]);
+            }
         }
 
         $type = $request->input('type');
@@ -38,9 +59,7 @@ class CartController extends Controller
             $query->where('intBoletoId', $type);
         }
 
-        // 📅 Filtro por rango de fechas (fecha del carrito)
-        $dateRange = $request->input('date');
-
+        // 📅 Filtro por rango de fechas
         if ($dateRange = $request->input('date')) {
             if (strpos($dateRange, ' a ') !== false) {
                 [$from, $to] = explode(' a ', $dateRange);
@@ -83,45 +102,58 @@ class CartController extends Controller
 
     public function chartData(Request $request)
     {
-        // 🔎 PASO 1: Obtener el código del influencer autenticado
         $user = $request->user();
-        
-        if (!$user || !$user->code) {
-            return response()->json([
-                'series' => [
-                    ['name' => 'Entrada General', 'data' => []],
-                    ['name' => 'Entrada Light', 'data' => []],
-                ],
-                'categories' => [],
-            ]);
+
+        if (!$user) {
+            return $this->emptyChartResponse();
         }
 
-        $coupon = strtolower($user->code);
+        // 👑 Si es ADMIN
+        if ($user->isAdmin()) {
+            $influencerFilter = $request->input('influencer');
 
-        // 📅 PASO 2: Obtener y procesar el rango de fechas
+            // Si selecciona "ALL", mostrar gráfico por influencer
+            if ($influencerFilter === 'ALL') {
+                return $this->chartByInfluencer($request);
+            }
+
+            // Si selecciona un influencer específico, gráfico normal
+            $coupon = strtolower($influencerFilter);
+        }
+        // 🎤 Si es INFLUENCER
+        else if ($user->isInfluencer()) {
+            if (!$user->code) {
+                return $this->emptyChartResponse();
+            }
+            $coupon = strtolower($user->code);
+        }
+
+        return $this->chartByDate($request, $coupon);
+    }
+
+    /**
+     * 📊 Gráfico por fecha (normal)
+     */
+    private function chartByDate(Request $request, $coupon)
+    {
         $dateRange = $request->input('date');
         $type = $request->input('type');
 
-        if ($dateRange = $request->input('date')) {
+        if ($dateRange) {
             if (strpos($dateRange, ' a ') !== false) {
-                // Rango de fechas
                 [$from, $to] = explode(' a ', $dateRange);
             } else {
-                // Solo un día
                 $from = $to = $dateRange;
             }
         } else {
-            // No viene fecha, usar mes actual
             $from = now()->startOfMonth()->format('Y-m-d');
             $to   = now()->format('Y-m-d');
         }
 
-        // 🔹 Ajustar para que incluya todo el día
         $from = Carbon::parse($from)->startOfDay()->format('Y-m-d H:i:s');
         $to   = Carbon::parse($to)->endOfDay()->format('Y-m-d H:i:s');
 
-        // 📊 PASO 3: Consulta SQL - Agrupar ventas por día y tipo
-        $data = CartDetail::select(
+        $query = CartDetail::select(
             DB::raw('DATE(cart.dateCartFreg) as date'),
             'cartdet.intBoletoId',
             DB::raw('COUNT(*) as total')
@@ -136,66 +168,160 @@ class CartController extends Controller
             })
             ->whereBetween('cart.dateCartFreg', [$from, $to])
             ->groupBy(DB::raw('DATE(cart.dateCartFreg)'), 'cartdet.intBoletoId')
-            ->orderBy(DB::raw('DATE(cart.dateCartFreg)'))
-            ->get();
+            ->orderBy(DB::raw('DATE(cart.dateCartFreg)'));
 
-        // 🗓️ PASO 4: Generar TODAS las fechas del rango
-        $dates = [];
+        $data = $query->get();
+
         $fromDate = Carbon::parse($from);
         $toDate = Carbon::parse($to);
         $daysDiff = $fromDate->diffInDays($toDate) + 1;
 
         if ($daysDiff > 20) {
-            // Solo fechas con ventas (sin días vacíos)
             $dates = $data->pluck('date')->unique()->sort()->values()->toArray();
         } else {
-            // Generar todas las fechas del rango (comportamiento original)
             $dates = [];
             $current = clone $fromDate;
-
             while ($current <= $toDate) {
                 $dates[] = $current->format('Y-m-d');
                 $current->addDay();
             }
         }
 
-        // 📦 PASO 5: Preparar arrays para ApexCharts
         $general = [];
         $light = [];
         $categories = [];
 
         foreach ($dates as $date) {
-            // Buscar si hubo ventas de Entrada General ese día
-            $generalSale = $data->where('date', $date)
-                ->where('intBoletoId', 11)
-                ->first();
+            $generalSale = $data->where('date', $date)->where('intBoletoId', 11)->first();
+            $lightSale = $data->where('date', $date)->where('intBoletoId', 17)->first();
 
-            // Buscar si hubo ventas de Entrada Light ese día
-            $lightSale = $data->where('date', $date)
-                ->where('intBoletoId', 17)
-                ->first();
-
-            // Agregar el total (o 0 si no hubo ventas)
             $general[] = $generalSale ? (int) $generalSale->total : 0;
             $light[] = $lightSale ? (int) $lightSale->total : 0;
-
-            // Formatear fecha para el eje X: "01/10"
-            $categories[] = \Carbon\Carbon::parse($date)->format('d/m');
+            $categories[] = Carbon::parse($date)->format('d/m');
         }
 
-        // 🎯 PASO 6: Retornar JSON en formato ApexCharts
         return response()->json([
             'series' => [
-                [
-                    'name' => 'Entrada General',
-                    'data' => $general,
-                ],
-                [
-                    'name' => 'Entrada Light',
-                    'data' => $light,
-                ],
+                ['name' => 'Entrada General', 'data' => $general],
+                ['name' => 'Entrada Light', 'data' => $light],
             ],
             'categories' => $categories,
         ]);
+    }
+
+    private function emptyChartResponse()
+    {
+        return response()->json([
+            'series' => [
+                ['name' => 'Entrada General', 'data' => []],
+                ['name' => 'Entrada Light', 'data' => []],
+            ],
+            'categories' => [],
+        ]);
+    }
+
+    /**
+     * 📊 Gráfico agrupado por influencer (solo para admin con "ALL")
+     */
+private function chartByInfluencer(Request $request)
+{
+    $dateRange = $request->input('date');
+    $type = $request->input('type');
+    $page = (int) $request->input('page', 1);
+    $itemsPerPage = (int) $request->input('itemsPerPage', 10);
+
+    // Fechas
+    if ($dateRange) {
+        if (strpos($dateRange, ' a ') !== false) {
+            [$from, $to] = explode(' a ', $dateRange);
+        } else {
+            $from = $to = $dateRange;
+        }
+    } else {
+        $from = now()->startOfMonth()->format('Y-m-d');
+        $to = now()->format('Y-m-d');
+    }
+
+    $from = Carbon::parse($from)->startOfDay();
+    $to   = Carbon::parse($to)->endOfDay();
+
+    // Consulta
+    $query = CartDetail::select(
+        'cartdet.coupon',
+        'cartdet.intBoletoId',
+        DB::raw('COUNT(*) as total')
+    )
+        ->join('cart', 'cartdet.intCartId', '=', 'cart.intCartId')
+        ->whereNotNull('cartdet.coupon')
+        ->where('cartdet.coupon', '!=', '')
+        ->when($type === 'ALL', fn($q) => $q->whereIn('cartdet.intBoletoId', [11, 17]))
+        ->when(in_array($type, [11, 17]), fn($q) => $q->where('cartdet.intBoletoId', $type))
+        ->whereBetween('cart.dateCartFreg', [$from, $to])
+        ->groupBy('cartdet.coupon', 'cartdet.intBoletoId')
+        ->get();
+
+    $influencers = UserInfluencer::whereIn('code', $query->pluck('coupon')->unique())
+        ->get()
+        ->keyBy('code');
+
+    $totals = [];
+    foreach ($query->groupBy('coupon') as $coupon => $sales) {
+        $general = $sales->where('intBoletoId', 11)->sum('total');
+        $light = $sales->where('intBoletoId', 17)->sum('total');
+
+        $influencer = $influencers->get($coupon);
+        $totals[] = [
+            'code' => $coupon,
+            'name' => $influencer?->name ?? $coupon,
+            'general' => (int) $general,
+            'light' => (int) $light,
+            'total' => (int) ($general + $light),
+        ];
+    }
+
+    usort($totals, fn($a, $b) => $b['total'] - $a['total']);
+
+    $top10 = array_slice($totals, 0, 10);
+    $ranking = collect($totals)
+        ->map(fn($item, $i) => array_merge($item, ['position' => $i + 1]));
+
+    // Paginación manual
+    $paginatedRanking = $ranking
+        ->forPage($page, $itemsPerPage)
+        ->values()
+        ->toArray();
+
+    return response()->json([
+        'series' => [
+            ['name' => 'Entrada General', 'data' => array_column($top10, 'general')],
+            ['name' => 'Entrada Light', 'data' => array_column($top10, 'light')],
+        ],
+        'categories' => array_column($top10, 'name'),
+        'ranking' => $ranking, // todos (para exportar o filtros)
+        'paginated' => $paginatedRanking, // solo página actual
+        'total' => count($totals),
+    ]);
+}
+
+
+    /**
+     * 📋 Obtener lista de influencers (solo para admins)
+     */
+    public function getInfluencers(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || !$user->isAdmin()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $influencers = UserInfluencer::where('role', 'influencer')
+            ->where('status', 'active')
+            ->whereNotNull('code')
+            ->select('id', 'name', 'code')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($influencers);
     }
 }

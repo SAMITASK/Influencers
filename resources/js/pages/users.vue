@@ -81,7 +81,7 @@ const {
   execute: fetchUsers,
   isFetching,
 } = await useApi(
-  createUrl("influencers", {
+  createUrl("influencers/list", {
     query: {
       q: searchQuery,
       itemsPerPage,
@@ -94,8 +94,6 @@ const {
 
 const users = computed(() => usersData.value.data);
 const totalUsers = computed(() => usersData.value.totalUsers);
-
-console.log(usersData.value.data);
 
 const resolveUserStatusVariant = (stat) => {
   const statLowerCase = stat.toLowerCase();

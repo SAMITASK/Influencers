@@ -58,6 +58,10 @@ class CartDetail extends Model
         return $this->belongsTo(Cart::class, 'intCartId', 'intCartId');
     }
 
+    public function influencer(){
+        return $this->belongsTo(UserInfluencer::class, 'coupon', 'code');
+    }
+
     public static function rawColumnCartDate()
     {
         return function ($query) {

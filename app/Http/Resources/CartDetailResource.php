@@ -2,23 +2,25 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Models\UserInfluencer;
 
 class CartDetailResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray($request)
     {
+        // Buscar el influencer por el código del cupón
+        $influencer = null;
+        if ($this->coupon) {
+            $influencer = UserInfluencer::where('code', $this->coupon)->first();
+        }
+
         return [
             'code'       => $this->coupon,
-            'date_shop'        => optional($this->cart)->dateCartFreg, // fecha del carrito
-            'price'       => $this->decCartdetPu,       // asumiendo que en Cart está el precio o total
-            'type'       => $this->getTypeEntrie(),                 // del accessor que hicimos
+            'influencer' => $influencer ? $influencer->name : null, // 👈 Nombre del influencer
+            'date_shop'  => optional($this->cart)->dateCartFreg,
+            'price'      => $this->decCartdetPu,
+            'type'       => $this->getTypeEntrie(),
         ];
     }
 }

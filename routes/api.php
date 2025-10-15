@@ -19,7 +19,7 @@ Route::post('/auth/verify-token', [AuthController::class, 'verifyToken']);
 // 🔐 RUTAS PROTEGIDAS (requieren autenticación)
 // ========================================
 Route::group(['middleware' => ['auth:sanctum']], function () {
-    
+
     // Obtener usuario autenticado
     Route::get('/user', function (Request $request) {
         return response()->json([
@@ -29,7 +29,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     // Influencers
     Route::prefix('influencers')->group(function () {
-        Route::get('/', [Influencer::class, 'index']);
+        Route::get('/list', [Influencer::class, 'index']);
         Route::post('/', [Influencer::class, 'store']);
         Route::put('/{id}', [Influencer::class, 'update']);
         Route::delete('/{id}', [Influencer::class, 'destroy']);
@@ -37,7 +37,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     // Cart
     Route::get('/cart-details', [CartController::class, 'index']);
-    Route::get('/cart-details/chart', [CartController::class, 'chartData']);
+    Route::get('/cart-details/chart',  [CartController::class , 'chartData']);
+    Route::get('/influencers', [CartController::class, 'getInfluencers']);
 
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 });
