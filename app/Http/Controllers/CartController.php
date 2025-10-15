@@ -13,31 +13,31 @@ class CartController extends Controller
 {
     public function index(Request $request)
     {
-        $query = CartDetail::with(['cart', 'influencer']); // 👈 Agregamos relación
+        $query = CartDetail::with(['cart', 'influencer']);
         $user = $request->user();
 
-        // 🔐 Verificar autenticación
+        // 🔐 Validar autenticación
         if (!$user) {
             return response()->json([
                 'data' => [],
                 'total' => 0,
                 'per_page' => 10,
                 'current_page' => 1,
+                'stats' => [
+                    'total' => 0,
+                    'totalFDT' => 0,
+                    'totalLight' => 0,
+                ],
             ]);
         }
 
-        // 👑 Si es ADMIN
+        // 👑 Filtro por rol
         if ($user->isAdmin()) {
             $influencerFilter = $request->input('influencer');
-
             if ($influencerFilter && $influencerFilter !== 'ALL') {
-                // Filtrar por un influencer específico
                 $query->whereRaw('LOWER(coupon) = ?', [strtolower($influencerFilter)]);
             }
-            // Si no selecciona influencer o es 'ALL', muestra TODAS las ventas (con o sin cupón)
-        }
-        // 🎤 Si es INFLUENCER
-        else if ($user->isInfluencer()) {
+        } elseif ($user->isInfluencer()) {
             if ($user->code) {
                 $query->whereRaw('LOWER(coupon) = ?', [strtolower($user->code)]);
             } else {
@@ -46,20 +46,24 @@ class CartController extends Controller
                     'total' => 0,
                     'per_page' => 10,
                     'current_page' => 1,
+                    'stats' => [
+                        'total' => 0,
+                        'totalFDT' => 0,
+                        'totalLight' => 0,
+                    ],
                 ]);
             }
         }
 
+        // 🎟️ Tipo de entrada
         $type = $request->input('type');
-
-        // 🎟️ Filtro por tipo de entrada
         if ($type === 'ALL') {
             $query->whereIn('intBoletoId', [11, 17]);
         } elseif (!empty($type)) {
             $query->where('intBoletoId', $type);
         }
 
-        // 📅 Filtro por rango de fechas
+        // 📅 Rango de fechas
         if ($dateRange = $request->input('date')) {
             if (strpos($dateRange, ' a ') !== false) {
                 [$from, $to] = explode(' a ', $dateRange);
@@ -75,11 +79,20 @@ class CartController extends Controller
             });
         }
 
+        // 📊 Totales globales optimizados (una sola consulta)
+        $stats = (clone $query)
+            ->selectRaw('
+            COUNT(*) as total,
+            SUM(CASE WHEN intBoletoId = 11 THEN 1 ELSE 0 END) as totalFDT,
+            SUM(CASE WHEN intBoletoId = 17 THEN 1 ELSE 0 END) as totalLight
+        ')
+            ->first();
+
         // 📌 Ordenamiento
         $sortBy  = $request->input('sortBy', 'dateCartFreg');
         $orderBy = $request->input('orderBy', 'desc');
-
         $allowedSorts = ['dateCartFreg', 'intBoletoId', 'coupon'];
+
         if (in_array($sortBy, $allowedSorts)) {
             $query->orderBy(
                 $sortBy === 'dateCartFreg' ? CartDetail::rawColumnCartDate() : $sortBy,
@@ -97,8 +110,14 @@ class CartController extends Controller
             'total' => $cartDetails->total(),
             'per_page' => $cartDetails->perPage(),
             'current_page' => $cartDetails->currentPage(),
+            'stats' => [
+                'total' => (int) $stats->total,
+                'totalFDT' => (int) $stats->totalFDT,
+                'totalLight' => (int) $stats->totalLight,
+            ],
         ]);
     }
+
 
     public function chartData(Request $request)
     {
@@ -223,85 +242,85 @@ class CartController extends Controller
     /**
      * 📊 Gráfico agrupado por influencer (solo para admin con "ALL")
      */
-private function chartByInfluencer(Request $request)
-{
-    $dateRange = $request->input('date');
-    $type = $request->input('type');
-    $page = (int) $request->input('page', 1);
-    $itemsPerPage = (int) $request->input('itemsPerPage', 10);
+    private function chartByInfluencer(Request $request)
+    {
+        $dateRange = $request->input('date');
+        $type = $request->input('type');
+        $page = (int) $request->input('page', 1);
+        $itemsPerPage = (int) $request->input('itemsPerPage', 10);
 
-    // Fechas
-    if ($dateRange) {
-        if (strpos($dateRange, ' a ') !== false) {
-            [$from, $to] = explode(' a ', $dateRange);
+        // Fechas
+        if ($dateRange) {
+            if (strpos($dateRange, ' a ') !== false) {
+                [$from, $to] = explode(' a ', $dateRange);
+            } else {
+                $from = $to = $dateRange;
+            }
         } else {
-            $from = $to = $dateRange;
+            $from = now()->startOfMonth()->format('Y-m-d');
+            $to = now()->format('Y-m-d');
         }
-    } else {
-        $from = now()->startOfMonth()->format('Y-m-d');
-        $to = now()->format('Y-m-d');
+
+        $from = Carbon::parse($from)->startOfDay();
+        $to   = Carbon::parse($to)->endOfDay();
+
+        // Consulta
+        $query = CartDetail::select(
+            'cartdet.coupon',
+            'cartdet.intBoletoId',
+            DB::raw('COUNT(*) as total')
+        )
+            ->join('cart', 'cartdet.intCartId', '=', 'cart.intCartId')
+            ->whereNotNull('cartdet.coupon')
+            ->where('cartdet.coupon', '!=', '')
+            ->when($type === 'ALL', fn($q) => $q->whereIn('cartdet.intBoletoId', [11, 17]))
+            ->when(in_array($type, [11, 17]), fn($q) => $q->where('cartdet.intBoletoId', $type))
+            ->whereBetween('cart.dateCartFreg', [$from, $to])
+            ->groupBy('cartdet.coupon', 'cartdet.intBoletoId')
+            ->get();
+
+        $influencers = UserInfluencer::whereIn('code', $query->pluck('coupon')->unique())
+            ->get()
+            ->keyBy('code');
+
+        $totals = [];
+        foreach ($query->groupBy('coupon') as $coupon => $sales) {
+            $general = $sales->where('intBoletoId', 11)->sum('total');
+            $light = $sales->where('intBoletoId', 17)->sum('total');
+
+            $influencer = $influencers->get($coupon);
+            $totals[] = [
+                'code' => $coupon,
+                'name' => $influencer?->name ?? $coupon,
+                'general' => (int) $general,
+                'light' => (int) $light,
+                'total' => (int) ($general + $light),
+            ];
+        }
+
+        usort($totals, fn($a, $b) => $b['total'] - $a['total']);
+
+        $top10 = array_slice($totals, 0, 10);
+        $ranking = collect($totals)
+            ->map(fn($item, $i) => array_merge($item, ['position' => $i + 1]));
+
+        // Paginación manual
+        $paginatedRanking = $ranking
+            ->forPage($page, $itemsPerPage)
+            ->values()
+            ->toArray();
+
+        return response()->json([
+            'series' => [
+                ['name' => 'Entrada General', 'data' => array_column($top10, 'general')],
+                ['name' => 'Entrada Light', 'data' => array_column($top10, 'light')],
+            ],
+            'categories' => array_column($top10, 'name'),
+            'ranking' => $ranking, // todos (para exportar o filtros)
+            'paginated' => $paginatedRanking, // solo página actual
+            'total' => count($totals),
+        ]);
     }
-
-    $from = Carbon::parse($from)->startOfDay();
-    $to   = Carbon::parse($to)->endOfDay();
-
-    // Consulta
-    $query = CartDetail::select(
-        'cartdet.coupon',
-        'cartdet.intBoletoId',
-        DB::raw('COUNT(*) as total')
-    )
-        ->join('cart', 'cartdet.intCartId', '=', 'cart.intCartId')
-        ->whereNotNull('cartdet.coupon')
-        ->where('cartdet.coupon', '!=', '')
-        ->when($type === 'ALL', fn($q) => $q->whereIn('cartdet.intBoletoId', [11, 17]))
-        ->when(in_array($type, [11, 17]), fn($q) => $q->where('cartdet.intBoletoId', $type))
-        ->whereBetween('cart.dateCartFreg', [$from, $to])
-        ->groupBy('cartdet.coupon', 'cartdet.intBoletoId')
-        ->get();
-
-    $influencers = UserInfluencer::whereIn('code', $query->pluck('coupon')->unique())
-        ->get()
-        ->keyBy('code');
-
-    $totals = [];
-    foreach ($query->groupBy('coupon') as $coupon => $sales) {
-        $general = $sales->where('intBoletoId', 11)->sum('total');
-        $light = $sales->where('intBoletoId', 17)->sum('total');
-
-        $influencer = $influencers->get($coupon);
-        $totals[] = [
-            'code' => $coupon,
-            'name' => $influencer?->name ?? $coupon,
-            'general' => (int) $general,
-            'light' => (int) $light,
-            'total' => (int) ($general + $light),
-        ];
-    }
-
-    usort($totals, fn($a, $b) => $b['total'] - $a['total']);
-
-    $top10 = array_slice($totals, 0, 10);
-    $ranking = collect($totals)
-        ->map(fn($item, $i) => array_merge($item, ['position' => $i + 1]));
-
-    // Paginación manual
-    $paginatedRanking = $ranking
-        ->forPage($page, $itemsPerPage)
-        ->values()
-        ->toArray();
-
-    return response()->json([
-        'series' => [
-            ['name' => 'Entrada General', 'data' => array_column($top10, 'general')],
-            ['name' => 'Entrada Light', 'data' => array_column($top10, 'light')],
-        ],
-        'categories' => array_column($top10, 'name'),
-        'ranking' => $ranking, // todos (para exportar o filtros)
-        'paginated' => $paginatedRanking, // solo página actual
-        'total' => count($totals),
-    ]);
-}
 
 
     /**
