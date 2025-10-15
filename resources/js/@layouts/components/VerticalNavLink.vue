@@ -1,34 +1,48 @@
 <script setup>
-import { layoutConfig } from '@layouts'
-import { can } from '@layouts/plugins/casl'
-import { useLayoutConfigStore } from '@layouts/stores/config'
+import { layoutConfig } from "@layouts";
+import { can } from "@layouts/plugins/casl";
+import { useLayoutConfigStore } from "@layouts/stores/config";
 import {
   getComputedNavLinkToProp,
   getDynamicI18nProps,
   isNavLinkActive,
-} from '@layouts/utils'
+} from "@layouts/utils";
 
 const props = defineProps({
   item: {
     type: null,
     required: true,
   },
-})
+});
 
-const configStore = useLayoutConfigStore()
-const hideTitleAndBadge = configStore.isVerticalNavMini()
+const configStore = useLayoutConfigStore();
+const hideTitleAndBadge = configStore.isVerticalNavMini();
+
+const userData = useCookie("userData");
+
+const userCargo = computed(() => userData?.value?.role?.toUpperCase());
 </script>
 
 <template>
   <li
-    v-if="can(item.action, item.subject)"
+    v-if="!item.roles || item.roles.includes(userCargo)"
     class="nav-link"
-    :class="{ disabled: item.disable }"
+    :class="[
+      {
+        'sub-item': props.isSubItem,
+        disabled: item.disable,
+      },
+    ]"
   >
     <Component
       :is="item.to ? 'RouterLink' : 'a'"
       v-bind="getComputedNavLinkToProp(item)"
-      :class="{ 'router-link-active router-link-exact-active': isNavLinkActive(item, $router) }"
+      :class="{
+        'router-link-active router-link-exact-active': isNavLinkActive(
+          item,
+          $router
+        ),
+      }"
     >
       <Component
         :is="layoutConfig.app.iconRenderer || 'div'"

@@ -13,7 +13,7 @@ class InfluencerResource extends JsonResource
      */
     public function toArray($request)
     {
-        return [
+return [
             'id'     => $this->id,
             'name'   => $this->name,
             'social' => $this->social_handle,
@@ -21,6 +21,7 @@ class InfluencerResource extends JsonResource
             'phone'  => $this->phone_number,
             'code'   => $this->code,
             'code_description' => $this->code_description,
+            'role'   => $this->role,
             'status' => $this->status,
             'actions' => [
                 'view'   => true,
