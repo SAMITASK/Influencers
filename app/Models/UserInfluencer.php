@@ -23,15 +23,32 @@ class UserInfluencer extends Authenticatable
         'code',
         'code_description',
         'status',
+        'role',
     ];
 
     // Ya no necesitas la relación codes() porque el código está directamente en este modelo
-    
+
     /**
      * Scope para buscar por código
      */
     public function scopeByCode($query, $code)
     {
         return $query->where('code', $code);
+    }
+
+    /**
+     * Verificar si el usuario es admin
+     */
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Verificar si el usuario es influencer
+     */
+    public function isInfluencer()
+    {
+        return $this->role === 'influencer';
     }
 }

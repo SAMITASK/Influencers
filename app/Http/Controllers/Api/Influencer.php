@@ -12,6 +12,7 @@ class Influencer extends Controller
 {
     public function index(Request $request)
     {
+        // 🔎 Mostrar todos los usuarios (influencers y admins)
         $query = UserInfluencer::query();
 
         // 🔍 Búsqueda
@@ -21,12 +22,12 @@ class Influencer extends Controller
                     ->orWhere('phone_number', 'like', "%{$request->q}%")
                     ->orWhere('email', 'like', "%{$request->q}%")
                     ->orWhere('social_handle', 'like', "%{$request->q}%")
-                    ->orWhere('code', 'like', "%{$request->q}%"); // 🆕 Búsqueda por código
+                    ->orWhere('code', 'like', "%{$request->q}%");
             });
         }
 
         // 📌 Orden
-        $allowed = ['name', 'email', 'phone_number', 'status', 'code'];
+        $allowed = ['name', 'email', 'phone_number', 'status', 'code', 'role']; // 🆕 Agregado 'role'
         $sortBy = $request->input('sortBy', 'name');
         $orderBy = $request->input('orderBy', 'asc');
 
@@ -51,10 +52,21 @@ class Influencer extends Controller
     public function store(InfluencerRequest $request)
     {
         try {
-            // 1️⃣ Crear influencer con código incluido
-            $influencer = UserInfluencer::create($request->validated());
+            $data = $request->validated();
 
-            // 2️⃣ Retornar influencer creado
+            // Solo permitir crear admins si el usuario autenticado es admin
+            if (isset($data['role']) && $data['role'] === 'admin') {
+                if (!$request->user()->isAdmin()) {
+                    return response()->json([
+                        'message' => 'No tienes permisos para crear administradores.'
+                    ], 403);
+                }
+            } else {
+                $data['role'] = 'influencer';
+            }
+
+            $influencer = UserInfluencer::create($data);
+
             return response()->json([
                 'message' => 'Influencer creado correctamente.',
                 'data' => $influencer
@@ -73,8 +85,14 @@ class Influencer extends Controller
         try {
             $influencer = UserInfluencer::findOrFail($id);
 
+            // 🆕 Prevenir que se modifique el role de un admin desde este endpoint
+            $data = $request->validated();
+            if ($influencer->isAdmin()) {
+                unset($data['role']); // No permitir cambiar role de admins
+            }
+
             // 1️⃣ Actualizar datos del influencer (incluye el código)
-            $influencer->update($request->validated());
+            $influencer->update($data);
 
             // 2️⃣ Retornar influencer actualizado
             return response()->json([

@@ -25,8 +25,9 @@ const localErrors = reactive({
   phone_number: [],
   email: [],
   social_handle: [],
-  code: [], // 🆕 Solo un código
-  code_description: [], // 🆕 Descripción del código
+  code: [],
+  code_description: [],
+  role: [], // 🆕
 })
 
 // ✅ Watch para actualizar errores desde el padre
@@ -60,6 +61,7 @@ const email = ref("")
 const socialHandle = ref("")
 const code = ref("") 
 const codeDescription = ref("")
+const role = ref("influencer") // 🆕
 const status = ref("active")
 const isEditing = ref(false)
 
@@ -73,6 +75,7 @@ const resetForm = () => {
   socialHandle.value = ""
   code.value = ""
   codeDescription.value = ""
+  role.value = "influencer" // 🆕
   status.value = "active"
   isEditing.value = false
   clearErrors()
@@ -94,8 +97,9 @@ watch(
       phoneNumber.value = newInfluencer.phone || ""
       email.value = newInfluencer.email || ""
       socialHandle.value = newInfluencer.social || ""
-      code.value = newInfluencer.code || "" // 🆕
-      codeDescription.value = newInfluencer.code_description || "" // 🆕
+      code.value = newInfluencer.code || ""
+      codeDescription.value = newInfluencer.code_description || ""
+      role.value = newInfluencer.role || "influencer" // 🆕
       status.value = newInfluencer.status || "active"
     } else {
       resetForm()
@@ -112,7 +116,7 @@ const closeNavigationDrawer = () => {
 }
 
 const onSubmit = () => {
-  clearErrors() // Limpiar errores anteriores antes de validar
+  clearErrors()
   
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
@@ -121,8 +125,9 @@ const onSubmit = () => {
         phone_number: phoneNumber.value,
         email: email.value,
         social_handle: socialHandle.value,
-        code: code.value, // 🆕 Un solo código
-        code_description: codeDescription.value, // 🆕
+        code: code.value,
+        code_description: codeDescription.value,
+        role: role.value, // 🆕
         status: status.value,
       }
 
@@ -157,7 +162,7 @@ defineExpose({
     @update:model-value="handleDrawerModelValueUpdate"
   >
     <AppDrawerHeaderSection
-      :title="isEditing ? 'Editar Influencer' : 'Agregar Influencer'"
+      :title="isEditing ? 'Editar Usuario' : 'Agregar Usuario'"
       @cancel="closeNavigationDrawer"
     />
 
@@ -213,7 +218,7 @@ defineExpose({
               <VCol cols="12">
                 <VTextField
                   v-model="code"
-                  label="Código del Influencer"
+                  label="Código"
                   placeholder="CODIGO2024"
                   :rules="[requiredValidator]"
                   :error-messages="localErrors.code"
@@ -228,6 +233,20 @@ defineExpose({
                   label="Descripción del Código (opcional)"
                   placeholder="Ej: Promo Navidad 2024"
                   :error-messages="localErrors.code_description"
+                />
+              </VCol>
+
+              <!-- 🆕 Campo de Rol -->
+              <VCol cols="12">
+                <VSelect
+                  v-model="role"
+                  label="Rol"
+                  :items="[
+                    { title: 'Influencer', value: 'influencer' },
+                    { title: 'Administrador', value: 'admin' },
+                  ]"
+                  :rules="[requiredValidator]"
+                  :error-messages="localErrors.role"
                 />
               </VCol>
 

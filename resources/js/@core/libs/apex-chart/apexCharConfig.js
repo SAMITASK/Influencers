@@ -519,7 +519,7 @@ export const getColumnChartConfig = themeColors => {
     yaxis: {
       labels: {
         style: { colors: themeDisabledTextColor },
-        formatter: (value) => Math.floor(value), // ✅ Sin decimales
+        formatter: (value) => value, // ✅ Sin decimales
       },
     },
     xaxis: {

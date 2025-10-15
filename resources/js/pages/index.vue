@@ -10,6 +10,33 @@ definePage({
 
 const searchQuery = ref("")
 const selectType = ref("ALL")
+const selectedInfluencer = ref("ALL")
+
+// 👤 Obtener datos del usuario desde la cookie
+const userData = useCookie('userData')
+const isAdmin = computed(() => userData.value?.role === 'admin')
+
+const influencersData = ref([])
+
+// 📋 Cargar lista de influencers (solo para admins)
+watchEffect(async () => {
+  if (isAdmin.value) {
+    const { data } = await useApi(createUrl('influencers'))
+    influencersData.value = data.value
+  }
+})
+
+const influencers = computed(() => {
+  if (!influencersData.value) return []
+  
+  return [
+    { title: 'Todos los influencers', value: 'ALL' },
+    ...influencersData.value.map(inf => ({
+      title: `${inf.name} (${inf.code})`,
+      value: inf.code
+    }))
+  ]
+})
 
 const today = new Date()
 const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -42,19 +69,28 @@ const headers = [
     align: "start",
     sortable: true,
   },
-
   {
     title: "S/. Precio",
     key: "price",
     align: "start",
     sortable: true,
   },
-];
+]
 
-const itemsPerPage = ref(30);
-const page = ref(1);
-const sortBy = ref();
-const orderBy = ref();
+// 🎁 Agregar columna de influencer si es admin
+if (isAdmin.value) {
+  headers.splice(3, 0, {
+    title: "👤 Influencer",
+    key: "coupon",
+    align: "start",
+    sortable: true,
+  })
+}
+
+const itemsPerPage = ref(30)
+const page = ref(1)
+const sortBy = ref()
+const orderBy = ref()
 
 const {
   data: cartData,
@@ -66,35 +102,36 @@ const {
       q: searchQuery,
       type: selectType,
       date: dateRange,
+      influencer: selectedInfluencer,
       itemsPerPage,
       page,
       sortBy,
       orderBy,
     },
   })
-);
+)
 
 const updateOptions = (options) => {
-  page.value = options.page;
-  sortBy.value = options.sortBy[0]?.key;
-  orderBy.value = options.sortBy[0]?.order;
-};
+  page.value = options.page
+  sortBy.value = options.sortBy[0]?.key
+  orderBy.value = options.sortBy[0]?.order
+}
 
-const cart = computed(() => cartData.value.data);
-const total = computed(() => cartData.value.total);
+const cart = computed(() => cartData.value.data)
+const total = computed(() => cartData.value.total)
 
 const statisticsWithIcon = computed(() => {
-  const data = cartData.value?.data || [];
+  const data = cartData.value?.data || []
 
-  let total = data.length;
-  let totalFDT = 0;
-  let totalLight = 0;
+  let total = data.length
+  let totalFDT = 0
+  let totalLight = 0
 
   data.forEach((item) => {
-    const type = (item.type || "").trim().toLowerCase();
-    if (type === "entrada general terror") totalFDT++;
-    if (type === "entrada light terror") totalLight++;
-  });
+    const type = (item.type || "").trim().toLowerCase()
+    if (type === "entrada general terror") totalFDT++
+    if (type === "entrada light terror") totalLight++
+  })
 
   return [
     {
@@ -118,8 +155,8 @@ const statisticsWithIcon = computed(() => {
       icon: "ri-lightbulb-line",
       iconColor: "warning",
     },
-  ];
-});
+  ]
+})
 </script>
 
 <template>
@@ -127,6 +164,22 @@ const statisticsWithIcon = computed(() => {
     <VCard class="mb-6" title="Filtros">
       <VCardText>
         <VRow>
+          <!-- 👑 Select de Influencer (solo para admin) -->
+          <VCol v-if="isAdmin" cols="12" sm="4">
+            <VSelect
+              v-model="selectedInfluencer"
+              label="Seleccionar Influencer"
+              placeholder="Todos los influencers"
+              :items="influencers"
+              clearable
+              clear-icon="ri-close-line"
+            >
+              <template #prepend-inner>
+                <VIcon icon="ri-user-star-line" />
+              </template>
+            </VSelect>
+          </VCol>
+
           <VCol cols="12" sm="4">
             <VSelect
               v-model="selectType"
@@ -141,6 +194,7 @@ const statisticsWithIcon = computed(() => {
               clear-icon="ri-close-line"
             />
           </VCol>
+          
           <VCol cols="12" sm="4">
             <AppDateTimePicker
               v-model="dateRange"
@@ -159,11 +213,11 @@ const statisticsWithIcon = computed(() => {
     </VCard>
 
     <VRow id="apex-chart-wrapper" class="d-flex flex-wrap align-center">
-      <!-- Estadísticas -->
-      <VCol cols="12" md="3" class="mb-6">
+      <VCol cols="12" md="12" class="mb-6">
         <VRow>
           <template v-if="isFetching">
-            <VCol cols="12" v-for="n in 3" :key="n">
+            <VCol cols="4" md="12"
+              sm="12" v-for="n in 3" :key="n">
               <VSkeletonLoader type="image" height="100" />
             </VCol>
           </template>
@@ -171,6 +225,8 @@ const statisticsWithIcon = computed(() => {
           <template v-else>
             <VCol
               cols="12"
+              md="4"
+              sm="6"
               v-for="stat in statisticsWithIcon"
               :key="stat.title"
             >
@@ -181,16 +237,17 @@ const statisticsWithIcon = computed(() => {
       </VCol>
 
       <!-- Gráfico -->
-      <VCol cols="12" md="9" class="mb-4 mb-md-0">
+      <VCol cols="12" md="12" class="mb-4 mb-md-0">
         <VCard class="mb-6">
           <ApexChartDataScience
             :date-range="dateRange"
             :type="selectType"
-            coupon="CAMILA2025"
+            :influencer="selectedInfluencer"
           />
         </VCard>
       </VCol>
     </VRow>
+    
     <VCard title="Detalle Entradas">
       <VCardText class="d-flex flex-wrap gap-4 align-center">
         <VSpacer />
@@ -215,6 +272,19 @@ const statisticsWithIcon = computed(() => {
         :loading="isFetching"
         hover
       >
+        <!-- 👤 Columna de influencer (solo visible para admin) -->
+        <template v-if="isAdmin" #item.coupon="{ item }">
+          <VChip
+            v-if="item.influencer"
+            size="small"
+            color="primary"
+            variant="tonal"
+          >
+            {{ item.influencer }}
+          </VChip>
+          <span v-else class="text-disabled">Sin influencer</span>
+        </template>
+
         <template #item.price="{ item }">
           <div class="d-flex align-center gap-x-3">
             <div class="d-flex flex-column">
@@ -227,6 +297,7 @@ const statisticsWithIcon = computed(() => {
             </div>
           </div>
         </template>
+        
         <!-- Pagination -->
         <template #bottom>
           <VDivider />

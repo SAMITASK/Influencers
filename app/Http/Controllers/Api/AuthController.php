@@ -82,6 +82,7 @@ class AuthController extends Controller
                     'social_handle' => $user->social_handle,
                     'code' => $user->code,
                     'code_description' => $user->code_description,
+                    'role' => $user->role,
                     'status' => $user->status,
                 ],
             ]);
