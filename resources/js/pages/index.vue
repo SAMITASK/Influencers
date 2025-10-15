@@ -1,54 +1,54 @@
 <script setup>
-import { Spanish } from "flatpickr/dist/l10n/es"
-import ApexChartDataScience from "@/views/charts/apex-chart/ApexChartDataScience.vue"
+import { Spanish } from "flatpickr/dist/l10n/es";
+import ApexChartDataScience from "@/views/charts/apex-chart/ApexChartDataScience.vue";
 
 definePage({
   meta: {
     requiresAuth: true,
   },
-})
+});
 
-const searchQuery = ref("")
-const selectType = ref("ALL")
-const selectedInfluencer = ref("ALL")
+const searchQuery = ref("");
+const selectType = ref("ALL");
+const selectedInfluencer = ref("ALL");
 
 // 👤 Obtener datos del usuario desde la cookie
-const userData = useCookie('userData')
-const isAdmin = computed(() => userData.value?.role === 'admin')
+const userData = useCookie("userData");
+const isAdmin = computed(() => userData.value?.role === "admin");
 
-const influencersData = ref([])
+const influencersData = ref([]);
 
 // 📋 Cargar lista de influencers (solo para admins)
 watchEffect(async () => {
   if (isAdmin.value) {
-    const { data } = await useApi(createUrl('influencers'))
-    influencersData.value = data.value
+    const { data } = await useApi(createUrl("influencers"));
+    influencersData.value = data.value;
   }
-})
+});
 
 const influencers = computed(() => {
-  if (!influencersData.value) return []
-  
-  return [
-    { title: 'Todos los influencers', value: 'ALL' },
-    ...influencersData.value.map(inf => ({
-      title: `${inf.name} (${inf.code})`,
-      value: inf.code
-    }))
-  ]
-})
+  if (!influencersData.value) return [];
 
-const today = new Date()
-const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+  return [
+    { title: "Todos los influencers", value: "ALL" },
+    ...influencersData.value.map((inf) => ({
+      title: `${inf.name} (${inf.code})`,
+      value: inf.code,
+    })),
+  ];
+});
+
+const today = new Date();
+const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
 function formatDate(date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-const dateRange = ref(`${formatDate(firstDayOfMonth)} a ${formatDate(today)}`)
+const dateRange = ref(`${formatDate(firstDayOfMonth)} a ${formatDate(today)}`);
 
 const headers = [
   {
@@ -75,7 +75,7 @@ const headers = [
     align: "start",
     sortable: true,
   },
-]
+];
 
 // 🎁 Agregar columna de influencer si es admin
 if (isAdmin.value) {
@@ -84,13 +84,13 @@ if (isAdmin.value) {
     key: "coupon",
     align: "start",
     sortable: true,
-  })
+  });
 }
 
-const itemsPerPage = ref(30)
-const page = ref(1)
-const sortBy = ref()
-const orderBy = ref()
+const itemsPerPage = ref(30);
+const page = ref(1);
+const sortBy = ref();
+const orderBy = ref();
 
 const {
   data: cartData,
@@ -109,54 +109,49 @@ const {
       orderBy,
     },
   })
-)
+);
 
 const updateOptions = (options) => {
-  page.value = options.page
-  sortBy.value = options.sortBy[0]?.key
-  orderBy.value = options.sortBy[0]?.order
-}
+  page.value = options.page;
+  sortBy.value = options.sortBy[0]?.key;
+  orderBy.value = options.sortBy[0]?.order;
+};
 
-const cart = computed(() => cartData.value.data)
-const total = computed(() => cartData.value.total)
+// 📦 Datos de tabla
+const cart = computed(() => cartData.value?.data || []);
+const total = computed(() => cartData.value?.total || 0);
 
 const statisticsWithIcon = computed(() => {
-  const data = cartData.value?.data || []
-
-  let total = data.length
-  let totalFDT = 0
-  let totalLight = 0
-
-  data.forEach((item) => {
-    const type = (item.type || "").trim().toLowerCase()
-    if (type === "entrada general terror") totalFDT++
-    if (type === "entrada light terror") totalLight++
-  })
+  const stats = cartData.value?.stats || {
+    total: 0,
+    totalFDT: 0,
+    totalLight: 0,
+  };
 
   return [
     {
       title: "Total Entradas",
-      value: total.toLocaleString(),
+      value: stats.total.toLocaleString(),
       desc: "Festival del Terror",
       icon: "ri-ticket-line",
       iconColor: "primary",
     },
     {
       title: "Entradas General",
-      value: totalFDT.toLocaleString(),
+      value: stats.totalFDT.toLocaleString(),
       desc: "Festival del Terror",
       icon: "ri-ticket-2-line",
       iconColor: "success",
     },
     {
       title: "Entradas Light",
-      value: totalLight.toLocaleString(),
+      value: stats.totalLight.toLocaleString(),
       desc: "Festival del Terror",
       icon: "ri-lightbulb-line",
       iconColor: "warning",
     },
-  ]
-})
+  ];
+});
 </script>
 
 <template>
@@ -194,7 +189,7 @@ const statisticsWithIcon = computed(() => {
               clear-icon="ri-close-line"
             />
           </VCol>
-          
+
           <VCol cols="12" sm="4">
             <AppDateTimePicker
               v-model="dateRange"
@@ -216,9 +211,8 @@ const statisticsWithIcon = computed(() => {
       <VCol cols="12" md="12" class="mb-6">
         <VRow>
           <template v-if="isFetching">
-            <VCol cols="4" md="12"
-              sm="12" v-for="n in 3" :key="n">
-              <VSkeletonLoader type="image" height="100" />
+            <VCol cols="12" md="4" sm="6" v-for="n in 3" :key="n">
+              <VSkeletonLoader type="card" height="100%" />
             </VCol>
           </template>
 
@@ -247,7 +241,7 @@ const statisticsWithIcon = computed(() => {
         </VCard>
       </VCol>
     </VRow>
-    
+
     <VCard title="Detalle Entradas">
       <VCardText class="d-flex flex-wrap gap-4 align-center">
         <VSpacer />
@@ -297,7 +291,7 @@ const statisticsWithIcon = computed(() => {
             </div>
           </div>
         </template>
-        
+
         <!-- Pagination -->
         <template #bottom>
           <VDivider />
