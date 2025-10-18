@@ -1,6 +1,13 @@
 <script setup>
 import AddNewUserDrawer from "@/views/apps/user/list/AddNewUserDrawer.vue";
 
+definePage({
+  meta: {
+    title: 'Usuarios',
+    roles: ['ADMIN'],
+  }
+})
+
 const isLoading = ref(false);
 const searchQuery = ref("");
 
