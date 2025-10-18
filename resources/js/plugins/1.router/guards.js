@@ -1,43 +1,96 @@
-import { canNavigate } from '@layouts/plugins/casl'
+// src/plugins/router/guards.js
+export function setupGuards(router) {
+  // Configuración de rutas protegidas
+  const protectedRoutes = {
+    'users': ['ADMIN'],
+    // Agrega más rutas aquí
+    // 'reports': ['ADMIN', 'MANAGER'],
+  }
 
-export const setupGuards = router => {
-  // 👉 router.beforeEach
-  // Docs: https://router.vuejs.org/guide/advanced/navigation-guards.html#global-before-guards
-  router.beforeEach(to => {
-    /*
-         * If it's a public route, continue navigation. This kind of pages are allowed to visited by login & non-login users. Basically, without any restrictions.
-         * Examples of public routes are, 404, under maintenance, etc.
-         */
-    if (to.meta.public)
-      return
+  router.beforeEach((to, from, next) => {
+    console.log('🔍 Navegando a:', {
+      path: to.path,
+      name: to.name,
+      meta: to.meta
+    })
 
-    /**
-         * Check if user is logged in by checking if token & user data exists in local storage
-         * Feel free to update this logic to suit your needs
-         */
-    const isLoggedIn = !!(useCookie('userData').value && useCookie('accessToken').value)
-
-    /*
-          If user is logged in and is trying to access login like page, redirect to home
-          else allow visiting the page
-          (WARN: Don't allow executing further by return statement because next code will check for permissions)
-         */
-    if (to.meta.unauthenticatedOnly) { 
-      if (isLoggedIn)
-        return '/'
-      else
-        return undefined
+    // 1. Rutas públicas explícitas
+    if (to.meta.public) {
+      return next()
     }
-    if (to.matched.length) {
-      if (!isLoggedIn) {
-        return {
-          name: 'login',
-          query: {
-            ...to.query,
-            to: to.fullPath !== '/' ? to.path : undefined,
-          },
-        }
+
+    // 2. Verificar autenticación
+    const userDataCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('userData='))
+    
+    const accessTokenCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('accessToken='))
+
+    let userData = null
+    if (userDataCookie) {
+      try {
+        userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]))
+      } catch (e) {
+        console.error('Error parsing userData cookie:', e)
       }
     }
+
+    const isLoggedIn = !!(userData && accessTokenCookie)
+
+    console.log('👤 Usuario:', {
+      isLoggedIn,
+      role: userData?.role
+    })
+
+    // 3. Rutas solo para no autenticados (login)
+    if (to.meta.unauthenticatedOnly) {
+      if (isLoggedIn) {
+        return next({ name: 'root' })
+      }
+      return next()
+    }
+
+    // 4. Redirigir a login si no está autenticado
+    if (!isLoggedIn && to.name !== 'login') {
+      return next({
+        name: 'login',
+        query: {
+          to: to.fullPath !== '/' ? to.fullPath : undefined,
+        },
+      })
+    }
+
+    // 5. ✅ VALIDAR ROLES
+    const requiredRoles = protectedRoutes[to.name]
+    
+    if (requiredRoles && Array.isArray(requiredRoles)) {
+      const userRole = userData?.role?.toUpperCase()
+      const allowedRoles = requiredRoles.map(role => role.toUpperCase())
+      
+      console.log('🔒 Validando roles:', {
+        ruta: to.name,
+        userRole,
+        allowedRoles,
+        hasAccess: allowedRoles.includes(userRole)
+      })
+      
+      if (!allowedRoles.includes(userRole)) {
+        console.warn(`⛔ Acceso denegado a ${to.path}`)
+        
+        // Redirigir al dashboard con error
+        return next({
+          name: 'root',
+          query: { 
+            error: 'unauthorized',
+            attempted: to.path 
+          }
+        })
+      }
+    }
+
+    console.log(`✅ Acceso permitido a ${to.path}`)
+    next()
   })
 }
